@@ -1,5 +1,5 @@
-import Final from './constvars'
-import Rectangle from './rectangle'
+import {Rectangle} from './rectangle'
+import Util from './util'
 
 const DIRECTION = 'left'
 const DIMENSION = 'dimension'
@@ -11,7 +11,7 @@ const OPEN = 'open'
 const CLOSE = 'close'
 const UNIT = 'px'
 const MAX_START_AREA = 25
-const THRESHOLD_VALUE = 0.3333
+const THRESHOLD_VALUE = 0.666666666
 
 export default class Left {
   /**
@@ -48,6 +48,7 @@ export default class Left {
      * @type {number}
      */
     this.threshold = this.options.threshold || THRESHOLD_VALUE
+    this.threshold = Util.validateThreshold(this.threshold)
 
     // Touch coordinates (Touch Start)
     this.startX = -1
@@ -55,6 +56,9 @@ export default class Left {
     // Touch coordinates (Touch Move)
     this.resumeX = -1
     this.resumeY = -1
+    // Touch coordinates (Touch End) [these may not be important]
+    this.endX = -1
+    this.endY = -1
 
     /**
      * A control for scroll. This control prevents
@@ -87,6 +91,7 @@ export default class Left {
    * to the `touchstart` event.
    * @param {Function} fn - a callback function called when the `start`
    * event is triggered
+   * @returns {void}
    */
   start(e, fn) {
     this.timing.start = new Date()
@@ -102,10 +107,11 @@ export default class Left {
         /[^\d]*$/, ''
       )
     )
+    this.positionOnStart = currentPosition
     const dimension = `-${this.width - start}${this.unit}`
-    const displacement = `-${this.width - Final.START}${this.unit}`
+    const displacement = `-${this.width - Util.START}${this.unit}`
 
-    if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO) {
+    if (start >= Util.ZERO && start <= this.maxArea && currentPosition !== Util.ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -125,6 +131,7 @@ export default class Left {
    * to the `touchmove` event.
    * @param {Function} fn - a callback function called when the `move`
    * event is triggered
+   * @returns {void}
    */
   move(e, fn) {
     const resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX
@@ -136,6 +143,7 @@ export default class Left {
         /[^\d]*$/, ''
       )
     )
+    const nextAction = this.positionOnStart === Util.ZERO ? CLOSE : OPEN
 
     const start = this.startX
     const width = this.width
@@ -166,7 +174,7 @@ export default class Left {
     const vdimension = `-${virtualStart - resume}${this.unit}`
     const backdropSheet = {
       opacity: resume / width,
-      display: Final.DISPLAY
+      display: Util.DISPLAY
     }
     const rect = new Rectangle(
       this.startX,
@@ -174,35 +182,35 @@ export default class Left {
       this.resumeX,
       this.resumeY
     )
-    const isBoundX = rect.wGTh()
-    // eslint-disable-next-line no-unused-expression, no-sequence, no-extra-parens
-    !this.scrollControlSet &&
-    (this.scrollControl = isBoundX), (this.scrollControlset = !this.scrollControlSet)
+    const isBoundX = rect.greaterWidth
+
+    if (!this.scrollControlSet) {
+      this.scrollControl = isBoundX
+      this.scrollControlset = !this.scrollControlSet
+    }
 
     // OPEN LOGIC
-    if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO && isBoundX && this.scrollControl) {
+    if (start >= Util.ZERO && start <= this.maxArea && currentPosition !== Util.ZERO && isBoundX && nextAction === OPEN && this.scrollControl) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
         open: true,
         close: false
       }
-      fn.call(this, response, rect)
+      fn.call(this.context || this, response, rect)
       // this.element.style[DIRECTION] = dimension
     }
 
     // CLOSE LOGIC
-    else if (start <= this.width && currentPosition === Final.ZERO && isBoundX && this.scrollControl) {
+    if (start <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
         close: true,
         open: false
       }
-      fn.call(this, response, rect)
+      fn.call(this.context || this, response, rect)
       // this.element.style[DIRECTION] = vdimension
-    } else {
-      return
     }
   }
 
@@ -215,10 +223,18 @@ export default class Left {
    * event is triggered
    * @param {{}} thresholdState - a state object which should be passed
    * by reference for updating by this method
+   * @returns {void}
    */
   end(e, fn, thresholdState) {
     this.timing.end = new Date()
 
+    const end = e.changedTouches[0].pageX || e.changedTouches[0].clientX
+    this.endX = end
+    this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
+
+    const rect = new Rectangle(this.startX, this.startY, this.endX, this.endY)
+
+    const start = this.startX
     const TIMING = this.timing.end.getTime() - this.timing.start.getTime()
     const threshold = this.threshold
     const signedOffsetSide = parseFloat(
@@ -227,39 +243,40 @@ export default class Left {
       )
     )
     const nonZero = `-${this.width}px`
-    const zero = `${Final.ZERO}`
+    const zero = `${Util.ZERO}`
     const offsetSide = Math.abs(signedOffsetSide)
     let action = OPEN
     // release the control for another session
-    this.scrollControl = this.scrollControlSet = false
+    this.scrollControl = this.scrollControlSet = false // eslint-disable-line no-multi-assign
 
     const response = {
       [EVENT_OBJ]: e,
       position: signedOffsetSide,
+      rect
     }
 
-    const getResponse = (state, trueForOpen) => {
-      return state === THRESHOLD && trueForOpen ? {
-        [DIMENSION]: zero,
-        TIMING,
-        ...response
-      } : state === THRESHOLD && !trueForOpen ? {
-        [DIMENSION]: nonZero,
-        TIMING,
-        ...response
-      } : state === BELOW_THRESHOLD && trueForOpen ? {
-        [DIMENSION]: nonZero,
-        TIMING,
-        ...response
-      } : {
-        [DIMENSION]: zero,
-        TIMING,
-        ...response
+    function getResponse(state, trueForOpen) {
+      const opposite = 'oppositeDimension'
+      if (state === THRESHOLD && trueForOpen || state === BELOW_THRESHOLD && !trueForOpen) {
+        return {
+          [DIMENSION]: zero,
+          TIMING,
+          [opposite]: nonZero,
+          ...response
+        }
+      } else if (state === THRESHOLD && !trueForOpen || state === BELOW_THRESHOLD && trueForOpen) {
+        return {
+          [DIMENSION]: nonZero,
+          TIMING,
+          [opposite]: zero,
+          ...response
+        }
       }
+      return {}
     }
 
     // OPEN LOGIC
-    if (offsetSide <= (this.width/threshold) && this.startX <= this.maxArea) {
+    if (offsetSide <= this.width * threshold && start <= this.maxArea) {
       thresholdState.state = [THRESHOLD, CLOSE]
       thresholdState.stateObj = getResponse(thresholdState.state[0], true)
       // this.element.style[DIRECTION] = zero
@@ -270,15 +287,15 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (start > this.maxArea && offsetSide != this.width) {
+    if (start > this.maxArea && offsetSide !== this.width) {
       action = CLOSE
-      if (offsetSide > this.width / threshold) {
+      if (offsetSide > this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
-        thresholdState.stateObj = getResponse(thresholdState.state, false)
+        thresholdState.stateObj = getResponse(thresholdState.state[0], false)
         // this.element.style[DIRECTION] = nonZero
       } else {
         thresholdState.state = [BELOW_THRESHOLD, OPEN]
-        thresholdState.stateObj = getResponse(thresholdState.state, false)
+        thresholdState.stateObj = getResponse(thresholdState.state[0], false)
         // this.element.style[DIRECTION] = zero
       }
     }
@@ -298,7 +315,6 @@ export default class Left {
   _loopWinSizeChangeEvent() {
     window.setInterval(() => {
       this.winSize = window.screen.availWidth
-    }, 1e3)
+    }, 1e3) // eslint-disable-line no-magic-numbers
   }
-
 }
