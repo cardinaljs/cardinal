@@ -39,8 +39,8 @@ export default class Drawer {
   // enum
   static UP = 0
   static LEFT = 1
-  static DOWN = 2
-  static RIGHT = 3
+  static DOWN = 2 // eslint-disable-line no-magic-numbers
+  static RIGHT = 3 // eslint-disable-line no-magic-numbers
 
   // public
   /**
@@ -48,12 +48,13 @@ export default class Drawer {
    * calling `Drawer.activate()`
    *
    * @see {@link Drawer#on | Drawer.on}
+   * @returns {void}
    */
   activate() {
     // get registered callbacks or set default
-    const startfn = this.callbacks ? this.callbacks[START] : () => {}
-    const movefn = this.callbacks ? this.callbacks[MOVE] : () => {}
-    const endfn = this.callbacks ? this.callbacks[END] : () => {}
+    const startfn = this.callbacks ? this.callbacks[START] : def
+    const movefn = this.callbacks ? this.callbacks[MOVE] : def
+    const endfn = this.callbacks ? this.callbacks[END] : def
 
     const startHandler = (e) => {
       if (this.direction === Drawer.UP) {
@@ -69,7 +70,7 @@ export default class Drawer {
       }
     }
 
-    let moveHandler = (e) => {
+    const moveHandler = (e) => {
       if (this.direction === Drawer.UP) {
         this.up.move(e, movefn)
       } else if (this.direction === Drawer.DOWN) {
@@ -83,7 +84,7 @@ export default class Drawer {
       }
     }
 
-    let endHandler = (e) => {
+    const endHandler = (e) => {
       if (this.direction === Drawer.UP) {
         const state = {}
         this.up.end(e, endfn, state) // `state` is passed by Ref
@@ -113,6 +114,7 @@ export default class Drawer {
 
   /**
    * A method provided by the `Drawer interface` to deactivate the drawer
+   * @returns {void}
    */
   deactivate() {
     for (let i = 0; i < this.events; i++) {
@@ -161,9 +163,9 @@ export default class Drawer {
    * - `end`
    * - `threshold`
    * - `belowthreshold`
-   * @param {string} event - The event type as in the above list
-   * @param {Function} fn - A function to call when this event triggers
-   * @returns `Drawer`
+   * @param {string} event The event type as in the above list
+   * @param {Function} fn A function to call when this event triggers
+   * @returns {Drawer} Returns a instance of the `Drawer` class
    */
   on(event, fn) {
     this._registerCallbacks(event, fn)
@@ -181,11 +183,12 @@ export default class Drawer {
 
   _processThresholdState(state) {
     const thState = state.state[0]
-    this.callbacks[thState].call(this.context || this, state.state, state.stateObj)
+    const vector = state.stateObj.rect
+    delete state.stateObj.rect
+    this.callbacks[thState].call(this.context || this, state.state, state.stateObj, vector)
   }
 
   _registerCallbacks(event, fn) {
-    const def = () => {}
     this.callbacks = this.callbacks || {
       [START]: def,
       [MOVE]: def,
@@ -195,8 +198,6 @@ export default class Drawer {
     }
     if (event in this.callbacks) {
       this.callbacks[event] = fn
-    } else {
-      return // BugMan
     }
   }
 
@@ -204,4 +205,8 @@ export default class Drawer {
   _register(...handlers) {
     this.handlers = [...handlers]
   }
+}
+
+function def() {
+  return false
 }
