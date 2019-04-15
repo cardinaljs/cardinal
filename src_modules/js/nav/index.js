@@ -1,6 +1,8 @@
-import NavDrawer from './drawer'
+import {Backdrop} from './backdrop'
 import HashState from './hashstate'
-import NavService, {_css} from './navservice'
+import NavDrawer from './drawer'
+import NavService from './navservice'
+import {css, getData, getAttribute, hasAttribute, setAttribute, unique, $} from '../util'
 
 const BACKDROP = "backdrop"
 const DEF_CLASSNAME = "cardinal-navcard"
@@ -15,7 +17,7 @@ const EVENTS = {
 
 class NavCard {
 
-  constructor(){
+  constructor() {
     // **Do not insert the below element into DOM**
     /**
      * **Covert Backdrop**
@@ -29,12 +31,15 @@ class NavCard {
     */
     this.backdrop = document.createElement('div')
     this.backdrop.className = BACKDROP
-    this.backdrop.style = _css(this.backdrop, {
+    css(this.backdrop, {
       background: 'rgba(0,0,0,.4)',
       height: '100%',
       width: '100%',
+      display: 'none',
+      position: 'fixed',
       top: 0,
-      left: 0
+      left: 0,
+      zIndex: -1
     })
 
     this.body = document.body
@@ -135,7 +140,7 @@ class NavCard {
     let defaultOptions = {
       ELEMENT: destination,
       INIT_ELEM: element,
-      BACKDROP: this.backdrop,
+      BACKDROP: new Backdrop(this.backdrop),
       BODY: this.body,
       TRANSITION: opts.transition,
       DIRECTION: ['top', 'left', 'bottom', 'right'][opts.direction],
@@ -204,50 +209,6 @@ class NavCard {
         this._hashAPI(null).deactivate()
         this._defaultAPI(null).deactivate()
     }
-  }
-}
-
-const dataCamelCase = data  => {
-  // remove 'data-' prefix and return camelCase string
-  return camelCase(data.substring(5), "-")
-}
-const camelCase = (data, delim="-") => {
-  let list = data instanceof Array ? data : data.split(delim)
-  return list.reduce((acc, cur)=> {
-    return acc + cur.charAt(0)
-    .toUpperCase() + cur.slice(1)
-  })
-}
-const unique = max => Math.floor(Math.random() * max)
-
-const $ = (...query) => {
-  /**
-   * **This is not jQuery**
-   * This selector is seperated as a function
-   * so for extensibility. If you'd love jQuery's `$`
-   * ```js
-   * import jQuery from 'where/ever'
-   * const $ = jQuery
-   * // or
-   * const $ = (...query) => jQuery(...query)
-   * ```
-   */
-  return  document.querySelectorAll(query[0])[0]
-}
-const getAttribute = (el, attr) =>  el.getAttribute(attr)
-const hasAttribute = (el, attr) => el.hasAttribute(attr)
-
-const setAttribute = (el, attr, value) => {
-  el.setAttribute(attr, value)
-}
-
-const getData = (el, attr) => {
-  let prop = dataCamelCase(attr)
-  // this may return `undefined` in some Safari
-  if (el.dataset && el.dataset[prop]) {
-   return  el.dataset[prop]
-  } else {
-    return getAttribute(el, attr)
   }
 }
 
