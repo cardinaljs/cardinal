@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-04-10T18:25:21.430Z
+  * Build Date: 2019-04-15T12:08:04.261Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -68,23 +68,16 @@
     return _extends.apply(this, arguments);
   }
 
-  var Final =
-  /*#__PURE__*/
-  function () {
-    function Final() {}
+  function _inheritsLoose(subClass, superClass) {
+    subClass.prototype = Object.create(superClass.prototype);
+    subClass.prototype.constructor = subClass;
+    subClass.__proto__ = superClass;
+  }
 
-    Final.validateThreshold = function validateThreshold(tsh) {
-      if (tsh < 1) {
-        tsh = 1 - tsh;
-        return tsh;
-      } else if (tsh >= 1) {
-        tsh = 1 / 1e10;
-        return tsh;
-      }
-    };
+  var MAX_THRESHOLD = 1;
+  var MIN_ILLEGAL_THRESHOLD = 0;
 
-    return Final;
-  }();
+  var Final = function Final() {};
 
   _defineProperty(Final, "START", 2);
 
@@ -93,6 +86,17 @@
   _defineProperty(Final, "ZERO", 0);
 
   _defineProperty(Final, "DISPLAY", 'block');
+  function validateThreshold(tsh) {
+    if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
+      tsh = MAX_THRESHOLD - tsh;
+      return tsh;
+    } else if (tsh < MIN_ILLEGAL_THRESHOLD) {
+      tsh = MAX_THRESHOLD;
+      return tsh;
+    }
+
+    return MAX_THRESHOLD;
+  }
 
   var Bottom =
   /*#__PURE__*/
@@ -167,10 +171,10 @@
     return Bottom;
   }();
 
-  var Rectangle$1 =
+  var Vector =
   /*#__PURE__*/
   function () {
-    function Rectangle(x1, y1, x2, y2) {
+    function Vector(x1, y1, x2, y2) {
       this.coordsX = {
         x1: x1,
         x2: x2
@@ -179,34 +183,58 @@
         y1: y1,
         y2: y2
       };
+    }
+
+    _createClass(Vector, [{
+      key: "displacementX",
+      get: function get() {
+        return this.coordsX.x2 - this.coordsX.x1;
+      }
+    }, {
+      key: "displacementY",
+      get: function get() {
+        return this.coordsY.y2 - this.coordsY.y1;
+      }
+    }]);
+
+    return Vector;
+  }();
+
+  var Rectangle$1 =
+  /*#__PURE__*/
+  function (_Vector) {
+    _inheritsLoose(Rectangle, _Vector);
+
+    function Rectangle(x1, y1, x2, y2) {
+      return _Vector.call(this, x1, y1, x2, y2) || this; //this.inheritted = true
     } // getter
 
-
-    var _proto = Rectangle.prototype;
-
-    // methods
-    _proto.wGTh = function wGTh() {
-      return this.width > this.height;
-    };
-
-    _proto.hGTw = function hGTw() {
-      return !this.wGTh();
-    };
 
     _createClass(Rectangle, [{
       key: "width",
       get: function get() {
-        return Math.abs(this.coordsX.x2 - this.coordsX.x1);
+        return Math.abs(this.displacementX);
       }
     }, {
       key: "height",
       get: function get() {
-        return Math.abs(this.coordsY.y2 - this.coordsY.y1);
+        return Math.abs(this.displacementY);
+      } // methods
+
+    }, {
+      key: "greaterWidth",
+      get: function get() {
+        return this.width > this.height;
+      }
+    }, {
+      key: "greaterHeight",
+      get: function get() {
+        return !this.greaterWidth;
       }
     }]);
 
     return Rectangle;
-  }();
+  }(Vector);
 
   var DIRECTION = 'left';
   var DIMENSION = 'dimension';
@@ -261,7 +289,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE;
-      this.threshold = Final.validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -380,7 +408,7 @@
 
       var vdimension = "-" + (virtualStart - resume) + this.unit;
       var rect = new Rectangle$1(this.startX, this.startY, this.resumeX, this.resumeY);
-      var isBoundX = rect.wGTh();
+      var isBoundX = rect.greaterWidth;
 
       if (!this.scrollControlSet) {
         this.scrollControl = isBoundX;
@@ -388,7 +416,7 @@
       } // OPEN LOGIC
 
 
-      if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO && isBoundX && nextAction === OPEN && this.scrollControl) {
+      if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > Final.ZERO) {
         var _response2;
 
         var response = (_response2 = {}, _response2[EVENT_OBJ] = e, _response2[DIMENSION] = dimension, _response2.open = true, _response2.close = false, _response2);
@@ -396,7 +424,7 @@
       } // CLOSE LOGIC
 
 
-      if (start <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl) {
+      if (currentPosition !== this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < Final.ZERO) {
         var _response4;
 
         var _response3 = (_response4 = {}, _response4[EVENT_OBJ] = e, _response4[DIMENSION] = vdimension, _response4.close = true, _response4.open = false, _response4);
@@ -436,6 +464,7 @@
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
+      var nextAction = this.positionOnStart === Final.ZERO ? CLOSE : OPEN;
       var response = (_response5 = {}, _response5[EVENT_OBJ] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
@@ -455,16 +484,21 @@
       } // OPEN LOGIC
 
 
-      if (offsetSide <= this.width * threshold && this.startX <= this.maxArea) {
-        thresholdState.state = [THRESHOLD, CLOSE];
-        thresholdState.stateObj = getResponse(thresholdState.state[0], true); // this.element.style[DIRECTION] = zero
-      } else {
-        thresholdState.state = [BELOW_THRESHOLD, CLOSE];
-        thresholdState.stateObj = getResponse(thresholdState.state[0], true); // this.element.style[DIRECTION] = nonZero
+      if (nextAction === OPEN && start <= this.maxArea) {
+        if (offsetSide <= this.width * threshold) {
+          thresholdState.state = [THRESHOLD, CLOSE];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true); // this.element.style[DIRECTION] = zero
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD, CLOSE];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true); // this.element.style[DIRECTION] = nonZero
+        }
+
+        fn.call(this, action);
+        return;
       } // CLOSE LOGIC
 
 
-      if (start > this.maxArea && offsetSide !== this.width) {
+      if (nextAction === CLOSE && rect.displacementX < 0) {
         action = CLOSE;
 
         if (offsetSide > this.width * threshold) {
@@ -474,9 +508,9 @@
           thresholdState.state = [BELOW_THRESHOLD, OPEN];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false); // this.element.style[DIRECTION] = zero
         }
-      }
 
-      fn.call(this, action);
+        fn.call(this, action);
+      }
     };
 
     _proto.setContext = function setContext(ctx) {
@@ -778,10 +812,7 @@
       this.events = ['touchstart', 'touchmove', 'touchend'];
       this.handlers = null;
       this.direction = options.DIRECTION;
-      this.up = new Top(this.options);
-      this.down = new Bottom(this.options);
-      this.left = new Left(this.options);
-      this.right = new Right(this.options);
+      this.callibration = null;
       /**
        *
        * @type {{}}
@@ -812,60 +843,32 @@
       var movefn = this.callbacks ? this.callbacks[MOVE] : def;
       var endfn = this.callbacks ? this.callbacks[END] : def;
 
+      this._setCalibration(this.direction);
+
       var startHandler = function startHandler(e) {
-        if (_this.direction === Drawer.UP) {
-          _this.up.start(e, startfn);
-        } else if (_this.direction === Drawer.DOWN) {
-          _this.down.start(e, startfn);
-        } else if (_this.direction === Drawer.LEFT) {
-          _this.left.start(e, startfn);
-        } else if (_this.direction === Drawer.DOWN) {
-          _this.right.start(e, startfn);
+        if (_this.direction !== null) {
+          _this.callibration.start(e, startfn);
         } else {
           _this.deactivate();
         }
       };
 
       var moveHandler = function moveHandler(e) {
-        if (_this.direction === Drawer.UP) {
-          _this.up.move(e, movefn);
-        } else if (_this.direction === Drawer.DOWN) {
-          _this.down.move(e, movefn);
-        } else if (_this.direction === Drawer.LEFT) {
-          _this.left.move(e, movefn);
-        } else if (_this.direction === Drawer.DOWN) {
-          _this.right.move(e, movefn);
+        if (_this.direction !== null) {
+          _this.callibration.move(e, movefn);
         } else {
           _this.deactivate();
         }
       };
 
       var endHandler = function endHandler(e) {
-        if (_this.direction === Drawer.UP) {
+        if (_this.direction !== null) {
           var state = {};
 
-          _this.up.end(e, endfn, state); // `state` is passed by Ref
+          _this.callibration.end(e, endfn, state); // state by Ref
 
 
           _this._processThresholdState(state);
-        } else if (_this.direction === Drawer.DOWN) {
-          var _state = {};
-
-          _this.down.end(e, endfn, _state);
-
-          _this._processThresholdState(_state);
-        } else if (_this.direction === Drawer.LEFT) {
-          var _state2 = {};
-
-          _this.left.end(e, endfn, _state2);
-
-          _this._processThresholdState(_state2);
-        } else if (_this.direction === Drawer.DOWN) {
-          var _state3 = {};
-
-          _this.right.end(e, endfn, _state3);
-
-          _this._processThresholdState(_state3);
         } else {
           _this.deactivate();
         }
@@ -952,10 +955,34 @@
     };
 
     _proto._processThresholdState = function _processThresholdState(state) {
+      if (Object.keys(state).length < 1) {
+        return;
+      }
+
       var thState = state.state[0];
-      var rect = state.stateObj.rect;
+      var vector = state.stateObj.rect;
       delete state.stateObj.rect;
-      this.callbacks[thState].call(this.context || this, state.state, state.stateObj, rect);
+      this.callbacks[thState].call(this.context || this, state.state, state.stateObj, vector);
+    };
+
+    _proto._setCalibration = function _setCalibration(point) {
+      switch (point) {
+        case Drawer.UP:
+          this.callibration = new Top(this.options);
+          break;
+
+        case Drawer.LEFT:
+          this.callibration = new Left(this.options);
+          break;
+
+        case Drawer.DOWN:
+          this.callibration = new Bottom(this.options);
+          break;
+
+        case Drawer.RIGHT:
+          this.callibration = new Right(this.options);
+          break;
+      }
     };
 
     _proto._registerCallbacks = function _registerCallbacks(event, fn) {
