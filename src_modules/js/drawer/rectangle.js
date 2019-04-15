@@ -1,8 +1,9 @@
-import {Vector} from './vector'
+import { Vector } from './vector'
 
 export class Rectangle extends Vector {
   constructor(x1, y1, x2, y2) {
     super(x1, y1, x2, y2)
+    //this.inheritted = true
   }
 
   // getter
