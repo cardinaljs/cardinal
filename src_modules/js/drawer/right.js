@@ -1,4 +1,4 @@
-import Final from './constvars'
+import Final from '../util'
 
 const DIRECTION = 'right'
 const DIMENSION = 'dimension'
@@ -61,6 +61,8 @@ export default class Right {
      */
     this.scrollControlSet = false
     this.scrollControl = null
+
+    this.context = null
   }
 
   start() {
@@ -170,5 +172,21 @@ export default class Right {
 
   end() {
 
+  }
+
+  setContext(ctx) {
+    this.context = ctx
+    return this
+  }
+
+  static _getStyle(elt, pseudoElt) {
+    return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt)
+  }
+
+  // no need for `window.onorientationchange`
+  _loopWinSizeChangeEvent() {
+    window.setInterval(() => {
+      this.winSize = window.screen.availWidth
+    }, 1e3)
   }
 }
