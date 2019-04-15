@@ -15,6 +15,6 @@ export class Vector {
   }
 
   get displacementY() {
-    return this.coordsX.y2 - this.coordsX.y1
+    return this.coordsY.y2 - this.coordsY.y1
   }
 }
