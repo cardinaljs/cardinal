@@ -1,4 +1,4 @@
-import Final from './constvars'
+import Final from '../util'
 
 export default class Top {
   /**
@@ -20,6 +20,7 @@ export default class Top {
      * A maximum area where the draw-start is sensitive
      */
     this.maxArea = this.options.maxStartArea
+    this.context = null
   }
 
   start(e) {
@@ -50,5 +51,21 @@ export default class Top {
 
   end() {
 
+  }
+
+  setContext(ctx) {
+    this.context = ctx
+    return this
+  }
+
+  static _getStyle(elt, pseudoElt) {
+    return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt)
+  }
+
+  // no need for `window.onorientationchange`
+  _loopWinSizeChangeEvent() {
+    window.setInterval(() => {
+      this.winSize = window.screen.availWidth
+    }, 1e3)
   }
 }
