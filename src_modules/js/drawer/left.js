@@ -1,5 +1,5 @@
 import {Rectangle} from './rectangle'
-import Util from './util'
+import Util, { validateThreshold } from './../util'
 
 const DIRECTION = 'left'
 const DIMENSION = 'dimension'
@@ -48,7 +48,7 @@ export default class Left {
      * @type {number}
      */
     this.threshold = this.options.threshold || THRESHOLD_VALUE
-    this.threshold = Util.validateThreshold(this.threshold)
+    this.threshold = validateThreshold(this.threshold)
 
     // Touch coordinates (Touch Start)
     this.startX = -1
@@ -172,10 +172,6 @@ export default class Left {
      * `width`, the width becomes the start point else the `start`
      */
     const vdimension = `-${virtualStart - resume}${this.unit}`
-    const backdropSheet = {
-      opacity: resume / width,
-      display: Util.DISPLAY
-    }
     const rect = new Rectangle(
       this.startX,
       this.startY,
@@ -190,7 +186,7 @@ export default class Left {
     }
 
     // OPEN LOGIC
-    if (start >= Util.ZERO && start <= this.maxArea && currentPosition !== Util.ZERO && isBoundX && nextAction === OPEN && this.scrollControl) {
+    if (start >= Util.ZERO && start <= this.maxArea && currentPosition !== Util.ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > Util.ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -202,7 +198,7 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (start <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl) {
+    if (currentPosition !== this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < Util.ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
@@ -249,6 +245,7 @@ export default class Left {
     // release the control for another session
     this.scrollControl = this.scrollControlSet = false // eslint-disable-line no-multi-assign
 
+    const nextAction = this.positionOnStart === Util.ZERO ? CLOSE : OPEN
     const response = {
       [EVENT_OBJ]: e,
       position: signedOffsetSide,
@@ -276,18 +273,23 @@ export default class Left {
     }
 
     // OPEN LOGIC
-    if (offsetSide <= this.width * threshold && start <= this.maxArea) {
-      thresholdState.state = [THRESHOLD, CLOSE]
-      thresholdState.stateObj = getResponse(thresholdState.state[0], true)
-      // this.element.style[DIRECTION] = zero
-    } else {
-      thresholdState.state = [BELOW_THRESHOLD, CLOSE]
-      thresholdState.stateObj = getResponse(thresholdState.state[0], true)
-      // this.element.style[DIRECTION] = nonZero
+    if (nextAction === OPEN && start <= this.maxArea) {
+      if (offsetSide <= this.width * threshold) {
+        thresholdState.state = [THRESHOLD, CLOSE]
+        thresholdState.stateObj = getResponse(thresholdState.state[0], true)
+        // this.element.style[DIRECTION] = zero
+      } else {
+        thresholdState.state = [BELOW_THRESHOLD, CLOSE]
+        thresholdState.stateObj = getResponse(thresholdState.state[0], true)
+        // this.element.style[DIRECTION] = nonZero
+      }
+      fn.call(this, action)
+      return
     }
 
+
     // CLOSE LOGIC
-    if (start > this.maxArea && offsetSide !== this.width) {
+    if (nextAction === CLOSE && rect.displacementX < 0) {
       action = CLOSE
       if (offsetSide > this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -298,8 +300,8 @@ export default class Left {
         thresholdState.stateObj = getResponse(thresholdState.state[0], false)
         // this.element.style[DIRECTION] = zero
       }
+      fn.call(this, action)
     }
-    fn.call(this, action)
   }
 
   setContext(ctx) {
