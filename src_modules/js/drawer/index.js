@@ -24,10 +24,7 @@ export default class Drawer {
     this.events = ['touchstart', 'touchmove', 'touchend']
     this.handlers = null
     this.direction = options.DIRECTION
-    this.up = new Top(this.options)
-    this.down = new Bottom(this.options)
-    this.left = new Left(this.options)
-    this.right = new Right(this.options)
+    this.callibration = null
     /**
      *
      * @type {{}}
@@ -56,50 +53,28 @@ export default class Drawer {
     const movefn = this.callbacks ? this.callbacks[MOVE] : def
     const endfn = this.callbacks ? this.callbacks[END] : def
 
+    this._setCalibration(this.direction)
+
     const startHandler = (e) => {
-      if (this.direction === Drawer.UP) {
-        this.up.start(e, startfn)
-      } else if (this.direction === Drawer.DOWN) {
-        this.down.start(e, startfn)
-      } else if (this.direction === Drawer.LEFT) {
-        this.left.start(e, startfn)
-      } else if (this.direction === Drawer.DOWN) {
-        this.right.start(e, startfn)
+      if (this.direction !== null) {
+        this.callibration.start(e, startfn)
       } else {
         this.deactivate()
       }
     }
 
     const moveHandler = (e) => {
-      if (this.direction === Drawer.UP) {
-        this.up.move(e, movefn)
-      } else if (this.direction === Drawer.DOWN) {
-        this.down.move(e, movefn)
-      } else if (this.direction === Drawer.LEFT) {
-        this.left.move(e, movefn)
-      } else if (this.direction === Drawer.DOWN) {
-        this.right.move(e, movefn)
+      if (this.direction !== null) {
+        this.callibration.move(e, movefn)
       } else {
         this.deactivate()
       }
     }
 
     const endHandler = (e) => {
-      if (this.direction === Drawer.UP) {
+      if (this.direction !== null) {
         const state = {}
-        this.up.end(e, endfn, state) // `state` is passed by Ref
-        this._processThresholdState(state)
-      } else if (this.direction === Drawer.DOWN) {
-        const state = {}
-        this.down.end(e, endfn, state)
-        this._processThresholdState(state)
-      } else if (this.direction === Drawer.LEFT) {
-        const state = {}
-        this.left.end(e, endfn, state)
-        this._processThresholdState(state)
-      } else if (this.direction === Drawer.DOWN) {
-        const state = {}
-        this.right.end(e, endfn, state)
+        this.callibration.end(e, endfn, state) // state by Ref
         this._processThresholdState(state)
       } else {
         this.deactivate()
@@ -182,10 +157,30 @@ export default class Drawer {
   }
 
   _processThresholdState(state) {
+    if (Object.keys(state).length < 1) {
+      return
+    }
     const thState = state.state[0]
     const vector = state.stateObj.rect
     delete state.stateObj.rect
     this.callbacks[thState].call(this.context || this, state.state, state.stateObj, vector)
+  }
+
+  _setCalibration(point) {
+    switch (point) {
+      case Drawer.UP:
+        this.callibration = new Top(this.options)
+        break
+      case Drawer.LEFT:
+        this.callibration = new Left(this.options)
+        break
+      case Drawer.DOWN:
+        this.callibration = new Bottom(this.options)
+        break
+      case Drawer.RIGHT:
+        this.callibration = new Right(this.options)
+        break
+    }
   }
 
   _registerCallbacks(event, fn) {
