@@ -51,7 +51,6 @@ class NavDrawer {
     }
     this.drawer = new BoundDrawer(o)
     this.transition = `${this.directionString} ${TRANS_TEMPLATE}`
-    this.backdropTransition = `${OPACITY} ${TRANS_TEMPLATE}`
   }
 
   activate() {
@@ -69,6 +68,15 @@ class NavDrawer {
     return 0
   }
 
+  get elementSize() {
+    const axis = this.direction
+    if (axis === BoundDrawer.UP || axis === BoundDrawer.DOWN) {
+      return this.element.offsetHeight
+    } else {
+      return this.element.offsetWidth
+    }
+  }
+
   _startHandler(response, rectangle) {
     this.element.style[this.directionString] = response.displacement
     this.element.style[EFFECT] = this.transition
@@ -78,30 +86,54 @@ class NavDrawer {
   _moveHandler(response, rectangle) {
     this.element.style[this.directionString] = response.dimension
     this.element.style[EFFECT] = this.transition
+    this.backdrop.setOpacity(rectangle.coordsX.x2 / this.elementSize)
   }
 
   _threshold(state, stateObj) {
-    const isOpen = state[1] === 'open'
-    this.body.style.overflow = isOpen ? SCROLL : HIDDEN
+    const wasOpen = state[1] === 'open'
+    if (wasOpen) {
+      this.body.style.overflow = SCROLL
+      this.backdrop.hide(this.options.TRANSITION)
+    } else {
+      this.body.style.overflow = HIDDEN
+      this.backdrop.show(this.options.TRANSITION)
+    }
     this.element.style[this.directionString] = stateObj.dimension
   }
 
   _belowThreshold(state, stateObj, rect) {
-    const isClosed = state[1] !== 'open'
-    this.body.style.overflow = isClosed ? SCROLL : HIDDEN
-    this.element.style[this.directionString] = stateObj.dimension
+    const wasClosed = state[1] !== 'open'
     const overallEventTime = stateObj.TIMING
 
     if (overallEventTime / 1e3 < 0.7) {
       console.log(overallEventTime)
       const displacement = this.direction === BoundDrawer.UP || this.direction === BoundDrawer.DOWN ? rect.displacementY : rect.displacementX
 
-      if(displacement > 0 && displacement >= 40 && rect.wGTh()) {
-        this.body.style.overflow = !isClosed ? SCROLL : HIDDEN
+      if(displacement > 0 && displacement >= 40 && rect.greaterWidth) {
+        this.body.style.overflow = !wasClosed ? SCROLL : HIDDEN
         this.element.style[this.directionString] = stateObj.oppositeDimension
+        this.backdrop.show(this.options.TRANSITION)
         console.log(`yeah ${rect.width}`)
+      } else if (displacement < 0 && displacement <= -40 && rect.greaterWidth) {
+        if (!wasClosed) {
+          this.body.style.overflow = SCROLL
+          this.backdrop.hide(this.options.TRANSITION)
+        } else {
+          this.body.style.overflow = HIDDEN
+          this.backdrop.show(this.options.TRANSITION)
+        }
+        this.element.style[this.directionString] = stateObj.oppositeDimension
       }
 
+    } else {
+      if (wasClosed) {
+        this.body.style.overflow = SCROLL
+        this.backdrop.hide(this.options.TRANSITION)
+      } else {
+        this.body.style.overflow = HIDDEN
+        this.backdrop.show(this.options.TRANSITION)
+      }
+      this.element.style[this.directionString] = stateObj.dimension
     }
   }
 }
