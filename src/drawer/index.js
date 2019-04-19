@@ -15,22 +15,22 @@ export default class Drawer {
    * @param {{}} options - an object of configuration options
    */
   constructor(options) {
-    this.options = options
+    this._options = options
     /**
      * @type {HTMLElement}
      */
-    this.element = options.ELEMENT
-    this.target = options.TARGET
+    this._element = options.ELEMENT
+    this._target = options.TARGET
     this.events = ['touchstart', 'touchmove', 'touchend']
-    this.handlers = null
-    this.direction = options.DIRECTION
-    this.callibration = null
+    this._handlers = null
+    this._direction = options.DIRECTION
+    this._callibration = null
     /**
      *
      * @type {{}}
      */
-    this.callbacks = null
-    this.context = null
+    this._callbacks = null
+    this._context = null
   }
 
   // enum
@@ -49,32 +49,32 @@ export default class Drawer {
    */
   activate() {
     // get registered callbacks or set default
-    const startfn = this.callbacks ? this.callbacks[START] : def
-    const movefn = this.callbacks ? this.callbacks[MOVE] : def
-    const endfn = this.callbacks ? this.callbacks[END] : def
+    const startfn = this._callbacks ? this._callbacks[START] : def
+    const movefn = this._callbacks ? this._callbacks[MOVE] : def
+    const endfn = this._callbacks ? this._callbacks[END] : def
 
-    this._setCalibration(this.direction)
+    this._setCalibration(this._direction)
 
     const startHandler = (e) => {
-      if (this.direction !== null) {
-        this.callibration.start(e, startfn)
+      if (this._direction !== null) {
+        this._callibration.start(e, startfn)
       } else {
         this.deactivate()
       }
     }
 
     const moveHandler = (e) => {
-      if (this.direction !== null) {
-        this.callibration.move(e, movefn)
+      if (this._direction !== null) {
+        this._callibration.move(e, movefn)
       } else {
         this.deactivate()
       }
     }
 
     const endHandler = (e) => {
-      if (this.direction !== null) {
+      if (this._direction !== null) {
         const state = {}
-        this.callibration.end(e, endfn, state) // state by Ref
+        this._callibration.end(e, endfn, state) // state by Ref
         this._processThresholdState(state)
       } else {
         this.deactivate()
@@ -83,7 +83,7 @@ export default class Drawer {
 
     this._register(startHandler, moveHandler, endHandler)
     for (let i = 0; i < this.events.length; i++) {
-      this.target.addEventListener(this.events[i], this.handlers[i])
+      this._target.addEventListener(this.events[i], this._handlers[i])
     }
   }
 
@@ -93,7 +93,7 @@ export default class Drawer {
    */
   deactivate() {
     for (let i = 0; i < this.events; i++) {
-      this.target.removeEventListener(this.events[i], this.handlers[i])
+      this._target.removeEventListener(this.events[i], this._handlers[i])
     }
     this._register()
   }
@@ -148,8 +148,8 @@ export default class Drawer {
   }
 
   setContext(ctx) {
-    this.context = ctx
-    this.callibration.setContext(ctx)
+    this._context = ctx
+    this._callibration.setContext(ctx)
     return this
   }
 
@@ -160,42 +160,42 @@ export default class Drawer {
     const thState = state.state[0]
     const vector = state.stateObj.rect
     delete state.stateObj.rect
-    this.callbacks[thState].call(this.context || this, state.state, state.stateObj, vector)
+    this._callbacks[thState].call(this._context || this, state.state, state.stateObj, vector)
   }
 
   _setCalibration(point) {
     switch (point) {
       case Drawer.UP:
-        this.callibration = new Top(this.options)
+        this._callibration = new Top(this._options)
         break
       case Drawer.LEFT:
-        this.callibration = new Left(this.options)
+        this._callibration = new Left(this._options)
         break
       case Drawer.DOWN:
-        this.callibration = new Bottom(this.options)
+        this._callibration = new Bottom(this._options)
         break
       case Drawer.RIGHT:
-        this.callibration = new Right(this.options)
+        this._callibration = new Right(this._options)
         break
     }
   }
 
   _registerCallbacks(event, fn) {
-    this.callbacks = this.callbacks || {
+    this._callbacks = this._callbacks || {
       [START]: def,
       [MOVE]: def,
       [END]: def,
       [THRESHOLD]: def,
       [BELOW_THRESHOLD]: def
     }
-    if (event in this.callbacks) {
-      this.callbacks[event] = fn
+    if (event in this._callbacks) {
+      this._callbacks[event] = fn
     }
   }
 
   // private
   _register(...handlers) {
-    this.handlers = [...handlers]
+    this._handlers = [...handlers]
   }
 }
 
