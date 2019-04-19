@@ -3,11 +3,11 @@ import Left from './left'
 import Right from './right'
 import Top from './top'
 
+const BELOW_THRESHOLD = 'belowthreshold'
+const THRESHOLD = 'threshold'
 const START = 'start'
 const MOVE = 'move'
 const END = 'end'
-const THRESHOLD = 'threshold'
-const BELOW_THRESHOLD = 'belowthreshold'
 
 export default class Drawer {
   /**
@@ -31,6 +31,8 @@ export default class Drawer {
      */
     this._callbacks = null
     this._context = null
+
+    this._setCalibration(this._direction)
   }
 
   // enum
@@ -52,8 +54,6 @@ export default class Drawer {
     const startfn = this._callbacks ? this._callbacks[START] : def
     const movefn = this._callbacks ? this._callbacks[MOVE] : def
     const endfn = this._callbacks ? this._callbacks[END] : def
-
-    this._setCalibration(this._direction)
 
     const startHandler = (e) => {
       if (this._direction !== null) {
