@@ -11,7 +11,7 @@ const OPEN = 'open'
 const CLOSE = 'close'
 const UNIT = 'px'
 const MAX_START_AREA = 25
-const THRESHOLD_VALUE = 0.666666666
+const THRESHOLD_VALUE = 0.666
 
 export default class Left {
   /**
