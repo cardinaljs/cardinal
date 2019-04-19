@@ -149,10 +149,7 @@ export default class Drawer {
 
   setContext(ctx) {
     this.context = ctx
-    this.left.setContext(ctx)
-    this.right.setContext(ctx)
-    this.up.setContext(ctx)
-    this.down.setContext(ctx)
+    this.callibration.setContext(ctx)
     return this
   }
 
