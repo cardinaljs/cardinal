@@ -1,5 +1,6 @@
 import babel from 'rollup-plugin-babel'
 import path from 'path'
+import resolve from 'rollup-plugin-node-resolve'
 
 const external = []
 const globals = {}
@@ -14,6 +15,7 @@ export default {
   },
   external,
   plugins: [
+    resolve(),
     babel({
       exclude: 'node_modules/**'
     })
