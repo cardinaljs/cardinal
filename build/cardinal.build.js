@@ -24,11 +24,11 @@ const plugins = [
   })
 ]
 const cardinal = {
-  Nav: path.resolve(__dirname, '../src_modules/js/nav/index.js'),
-  Drawer: path.resolve(__dirname, '../src_modules/js/drawer/index.js'),
-  //Sheets: path.resolve(__dirname, '../src_modules/js/sheets/index.js')
+  Nav: path.resolve(__dirname, '../src/nav/index.js'),
+  Drawer: path.resolve(__dirname, '../src/drawer/index.js'),
+  //Sheets: path.resolve(__dirname, '../src/sheets/index.js')
 }
-const distro = '../dist/js/'
+const distro = '../dist/'
 
 function mason(mod) {
   console.log(`Your mason is building ${mod}`)
