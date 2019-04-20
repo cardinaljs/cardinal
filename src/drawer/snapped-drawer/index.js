@@ -9,10 +9,10 @@ const START = 'start'
 const MOVE = 'move'
 const END = 'end'
 
-export default class Drawer {
+export default class SnappedDrawer {
   /**
    *
-   * @param {{}} options - an object of configuration options
+   * @param {{}} options an object of configuration options
    */
   constructor(options) {
     this._options = options
@@ -140,7 +140,7 @@ export default class Drawer {
    * - `belowthreshold`
    * @param {string} event The event type as in the above list
    * @param {Function} fn A function to call when this event triggers
-   * @returns {Drawer} Returns a instance of the `Drawer` class
+   * @returns {this} Returns an instance variable of the `Drawer` class
    */
   on(event, fn) {
     this._registerCallbacks(event, fn)
