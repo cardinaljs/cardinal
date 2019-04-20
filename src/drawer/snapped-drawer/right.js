@@ -1,4 +1,4 @@
-import Final from '../util'
+import Final from './../../util'
 
 const DIRECTION = 'right'
 const DIMENSION = 'dimension'

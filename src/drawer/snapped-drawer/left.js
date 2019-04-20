@@ -1,5 +1,5 @@
 import {Rectangle} from './../rectangle'
-import Util, { validateThreshold } from './../util'
+import Util, { validateThreshold } from './../../util'
 
 const DIRECTION = 'left'
 const DIMENSION = 'dimension'

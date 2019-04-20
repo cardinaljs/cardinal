@@ -1,4 +1,4 @@
-import Final from '../util'
+import Final from './../../util'
 
 export default class Top {
   /**
