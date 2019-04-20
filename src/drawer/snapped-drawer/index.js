@@ -26,7 +26,6 @@ export default class SnappedDrawer {
     this._direction = options.DIRECTION
     this._callibration = null
     /**
-     *
      * @type {{}}
      */
     this._callbacks = null
@@ -38,8 +37,8 @@ export default class SnappedDrawer {
   // enum
   static UP = 0
   static LEFT = 1
-  static DOWN = 2 // eslint-disable-line no-magic-numbers
-  static RIGHT = 3 // eslint-disable-line no-magic-numbers
+  static DOWN = 2
+  static RIGHT = 3
 
   // public
   /**
