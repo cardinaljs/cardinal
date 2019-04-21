@@ -1,5 +1,5 @@
-import {Rectangle} from './../rectangle'
-import Util, { validateThreshold } from './../../util'
+import { Rectangle } from './../rectangle'
+import { ZERO, validateThreshold } from './../../util'
 
 const DIRECTION = 'left'
 const DIMENSION = 'dimension'
@@ -12,6 +12,7 @@ const CLOSE = 'close'
 const UNIT = 'px'
 const MAX_START_AREA = 25
 const THRESHOLD_VALUE = 0.666
+const FALSE_TOUCH_START_POINT = 2
 
 export default class Left {
   /**
@@ -109,9 +110,9 @@ export default class Left {
     )
     this.positionOnStart = currentPosition
     const dimension = `-${this.width - start}${this.unit}`
-    const displacement = `-${this.width - Util.START}${this.unit}`
+    const displacement = `-${this.width - FALSE_TOUCH_START_POINT}${this.unit}`
 
-    if (start >= Util.ZERO && start <= this.maxArea && currentPosition !== Util.ZERO) {
+    if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -143,7 +144,7 @@ export default class Left {
         /[^\d]*$/, ''
       )
     )
-    const nextAction = this.positionOnStart === Util.ZERO ? CLOSE : OPEN
+    const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
 
     const start = this.startX
     const width = this.width
@@ -186,7 +187,7 @@ export default class Left {
     }
 
     // OPEN LOGIC
-    if (start >= Util.ZERO && start <= this.maxArea && currentPosition !== Util.ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > Util.ZERO) {
+    if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -198,7 +199,7 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (currentPosition !== this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < Util.ZERO) {
+    if (currentPosition !== this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
@@ -239,13 +240,13 @@ export default class Left {
       )
     )
     const nonZero = `-${this.width}px`
-    const zero = `${Util.ZERO}`
+    const zero = `${ZERO}`
     const offsetSide = Math.abs(signedOffsetSide)
     let action = OPEN
     // release the control for another session
     this.scrollControl = this.scrollControlSet = false // eslint-disable-line no-multi-assign
 
-    const nextAction = this.positionOnStart === Util.ZERO ? CLOSE : OPEN
+    const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
     const response = {
       [EVENT_OBJ]: e,
       position: signedOffsetSide,
