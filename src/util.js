@@ -1,11 +1,11 @@
 const MAX_THRESHOLD = 1
 const MIN_ILLEGAL_THRESHOLD = 0
 
-export default class Final {
-  static START = 2
-  static HIDDEN = 'hidden'
-  static ZERO = 0
-  static DISPLAY = 'block'
+export const Final = {
+  START: 2,
+  HIDDEN: 'hidden',
+  ZERO: 0,
+  DISPLAY: 'block'
 }
 
 export function dataCamelCase(data) {
