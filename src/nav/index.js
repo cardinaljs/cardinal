@@ -1,8 +1,8 @@
-import {Backdrop} from './backdrop'
+import { Backdrop } from './backdrop'
 import HashState from './hashstate'
 import NavDrawer from './drawer'
 import NavService from './navservice'
-import {css, getData, getAttribute, hasAttribute, setAttribute, unique, $} from '../util'
+import { css, getData, getAttribute, hasAttribute, setAttribute, unique, $ } from '../util'
 
 const BACKDROP = "backdrop"
 const DEF_CLASSNAME = "cardinal-navcard"

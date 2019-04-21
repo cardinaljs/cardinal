@@ -1,4 +1,4 @@
-import {css} from './../util'
+import { css } from './../util'
 
 const TRANSITION_STYLE = "ease"
 const EFFECT = "transition"
