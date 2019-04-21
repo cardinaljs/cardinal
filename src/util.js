@@ -1,12 +1,7 @@
 const MAX_THRESHOLD = 1
 const MIN_ILLEGAL_THRESHOLD = 0
 
-export const Final = {
-  START: 2,
-  HIDDEN: 'hidden',
-  ZERO: 0,
-  DISPLAY: 'block'
-}
+export const ZERO = 0
 
 export function dataCamelCase(data) {
   // remove 'data-' prefix and return camelCase string
