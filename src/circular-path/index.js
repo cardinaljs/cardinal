@@ -1,4 +1,9 @@
-import { Circle, POINT_ANGLE, HALF, PI, RAD } from './circle'
+import {
+  Circle,
+  HALF,
+  POINT_ANGLE,
+  RAD
+} from './circle'
 
 const ZERO = 0
 const DEG = 1 / RAD
@@ -29,25 +34,24 @@ export default class CircularPath extends Circle {
   get paths() {
     const paths = []
     this._angles.forEach((angle) => {
-      if (angle = ZERO || (angle <= POINT_ANGLE && angle % RIGHT_ANGLE == ZERO)) {
-        return this.radius
+      if (angle === ZERO || angle <= POINT_ANGLE && angle % RIGHT_ANGLE === ZERO) {
+        paths.push(this.radius)
+        return
       }
       this._quad = this._getQuadrant(angle)
-      const degAngle = this._degToRad(angle)
-      const hyp = this._chordLength(degAngle)
+      angle = this._quad !== Quadrant.FIRST ? this._quad - angle : angle
+      const radAngle = this._degToRad(angle)
+      const hyp = this._chordLength(radAngle)
       // RAT: Right Angle Triangle
       // These are the angles of a RAT that overlaps the circle
       // with its hypotenuse being the chord that closes the
       // inner "cut" triangle
       // angleAofRAT = 90 or what else do you think.
-      const angleCofRAT = this._getLastTwoEqAngles(degAngle)
-      // `angleCofRAT` could be used to calculate half the
-      // length of the tangent drawn on the circle which makes
-      // the line of the RAT that carries the 90deg angle.
+      const angleCofRAT = this._getLastTwoEqAngles(radAngle)
       const angleBofRAT = RIGHT_ANGLE - angleCofRAT
       // what would be the path is the `opp` side with respect
       // to `angleBofRAT` i.e the line that faces it.
-      paths.push(this._findOppUseSOH(angleBofRAT, hyp))
+      paths.push(this._findOppUseSOH(this._degToRad(angleBofRAT), hyp))
     })
     return paths
   }
@@ -72,23 +76,30 @@ export default class CircularPath extends Circle {
    * the other two are equal since two sides `b` & `c` are
    * equal i.e `b = c = radius`
    *
-   * @param {number} angleA
+   * @param {number} angleA an angle in degree of the only unequal
+   * part of the triangle
+   * @returns {number} an angle in degree that reps the angle of the
+   * two equal sides of the triangle
    */
   _getLastTwoEqAngles(angleA) {
-    return (POINT_ANGLE * HALF - angleA) * HALF
+    return (POINT_ANGLE * HALF - this._radToDeg(angleA)) * HALF
   }
 
   _getQuadrant(angle) {
+    let quad
     [
-      Quadrant.FIRST,
-      Quadrant.SECOND,
+      Quadrant.FOURTH,
       Quadrant.THIRD,
-      Quadrant.FOURTH
+      Quadrant.SECOND,
+      Quadrant.FIRST
     ].forEach((value, index, array) => {
-      if (angle <= value) {
-        return array[index]
+      if (angle > value) {
+        quad = array[--index]
+      } else {
+        quad = array[index]
       }
     })
+    return quad
   }
 
   _chordLength(angle) {
