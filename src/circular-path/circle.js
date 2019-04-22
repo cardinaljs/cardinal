@@ -21,12 +21,12 @@ export class Circle {
   }
 
   areaOfSect(angle) {
-    angle = angle * RAD
+    angle *= RAD
     return angle / POINT_ANGLE * this.area
   }
 
   lenOfSect(angle) {
-    angle = angle * RAD
+    angle *= RAD
     return angle / POINT_ANGLE * this.circumference
   }
 }
