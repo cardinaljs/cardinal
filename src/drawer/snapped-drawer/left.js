@@ -1,5 +1,10 @@
-import { Rectangle } from './../rectangle'
-import { ZERO, validateThreshold } from './../../util'
+import {
+  ZERO,
+  validateThreshold
+} from './../../util'
+import {
+  Rectangle
+} from './../rectangle'
 
 const DIRECTION = 'left'
 const DIMENSION = 'dimension'
