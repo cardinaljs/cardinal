@@ -164,18 +164,20 @@ export default class SnappedDrawer {
 
   _setCalibration(point) {
     switch (point) {
-      case Drawer.UP:
+      case SnappedDrawer.UP:
         this._callibration = new Top(this._options)
         break
-      case Drawer.LEFT:
+      case SnappedDrawer.LEFT:
         this._callibration = new Left(this._options)
         break
-      case Drawer.DOWN:
+      case SnappedDrawer.DOWN:
         this._callibration = new Bottom(this._options)
         break
-      case Drawer.RIGHT:
+      case SnappedDrawer.RIGHT:
         this._callibration = new Right(this._options)
         break
+      default:
+        throw RangeError('Direction out of range')
     }
   }
 
