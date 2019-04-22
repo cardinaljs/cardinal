@@ -55,7 +55,16 @@ export function validateThreshold(tsh) {
   return MAX_THRESHOLD
 }
 
-export function css(el, property, style) {
+/**
+ * @param {HTMLElement} el an HTMLElement whose style should
+ * be accessed
+ * @param {string | string[] | {}} property A property/properties
+ * to set or get
+ * @param {string | number} style value to set as
+ * @returns {CSSStyleDeclaration | string} A css style property
+ * or CSSStyleDeclaration object
+ */
+export function css(el, property, style = null) {
   const STYLEMAP = window.getComputedStyle(el)
 
   style = style || null
@@ -64,7 +73,7 @@ export function css(el, property, style) {
   if (typeof property === 'string' && style !== null) {
     // setting one property
     el.style[property] = style
-    return
+    return null
   }
   if (typeof property === 'object' && property instanceof Object) {
     // `style` MUST = null
@@ -86,4 +95,5 @@ export function css(el, property, style) {
     // get style from property
     return STYLEMAP[property]
   }
+  return STYLEMAP
 }
