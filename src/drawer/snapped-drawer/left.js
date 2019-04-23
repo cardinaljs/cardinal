@@ -39,7 +39,7 @@ export default class Left {
     /**
      * @type {number}
      */
-    this.width = this.element.offsetWidth
+    this.width = this.options.SIZE
     this.unit = this.options.unit || UNIT
     /**
      * @type {number}
@@ -92,7 +92,7 @@ export default class Left {
 
   /**
    * The `touchstart` event handler for the `Left` drawer `class`
-   * @param {{}} e an event `object`: An event `object`
+   * @param {TouchEvent} e an event `object`: An event `object`
    * representing an `object` of all `properties` related
    * to the `touchstart` event.
    * @param {Function} fn - a callback function called when the `start`
@@ -105,7 +105,7 @@ export default class Left {
     this.startX = start
     this.startY =  e.changedTouches[0].pageY || e.changedTouches[0].clientY
     /**
-     * The `Drawer`'s `Left` class uses the `CSS property` -- `left`
+     * The `Drawer`'s `Left` class uses the `CSS property`, `left`
      * for updating and defining position of the drawn element
      */
     const currentPosition = parseFloat(
@@ -131,8 +131,8 @@ export default class Left {
   }
 
   /**
-   * The `touchstart` event handler for the `Left` drawer `class`
-   * @param {{}} e an event `object`: An event `object`
+   * The `touchmove` event handler for the `Left` drawer `class`
+   * @param {TouchEvent} e an event `object`: An event `object`
    * representing an `object` of all `properties` related
    * to the `touchmove` event.
    * @param {Function} fn - a callback function called when the `move`
@@ -217,8 +217,8 @@ export default class Left {
   }
 
   /**
-   * The `touchstart` event handler for the `Left` drawer `class`
-   * @param {{}} e an event `object`: An event `object`
+   * The `touchend` event handler for the `Left` drawer `class`
+   * @param {TouchEvent} e an event `object`: An event `object`
    * representing an `object` of all `properties` related
    * to the `touchend` event.
    * @param {Function} fn - a callback function called when the `end`
