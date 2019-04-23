@@ -1,5 +1,10 @@
 import Drawer from './../drawer/'
 
+const ZERO = 0
+const KILO = 1e3
+const MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.7
+const MIN_POSITIVE_DISPLACEMENT = 40
+const MIN_NEGATIVE_DISPLACEMENT = -MIN_POSITIVE_DISPLACEMENT
 const TRANSITION_STYLE = 'linear'
 const EFFECT = 'transition'
 const TRANS_TIMING = '0.1s' // This value is basic, the calc'ed value will depend on drawer speed
