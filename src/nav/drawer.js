@@ -1,4 +1,4 @@
-import BoundDrawer from './../drawer/'
+import Drawer from './../drawer/'
 
 const TRANSITION_STYLE = 'linear'
 const EFFECT = 'transition'
