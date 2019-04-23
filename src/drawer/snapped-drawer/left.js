@@ -204,7 +204,7 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (currentPosition !== this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
+    if (resume <= this.width && currentPosition <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
