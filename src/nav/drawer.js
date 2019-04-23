@@ -19,7 +19,10 @@ const DIRECTIONS = ['top', 'left', 'bottom', 'right']
 
 class NavDrawer {
   /**
-   *
+   * Creates a new NavDrawer object. Providing the Left and Right
+   * Drawer functionality.
+   * Support for Top and Bottom may come in the future
+   * @throws RangeError
    * @param {{}} options An options Object to configure the Drawer with
    */
   constructor(options) {
