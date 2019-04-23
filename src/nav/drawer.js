@@ -32,11 +32,11 @@ class NavDrawer {
      */
     this.element = this.options.ELEMENT
     /**
-     * @type {HTMLElement}
+     * @type {HTMLBodyElement}
      */
     this.body = this.options.BODY
     /**
-     * @type {HTMLElement}
+     * @type {number}
      */
     this.backdrop = this.options.BACKDROP
     /**
