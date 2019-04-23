@@ -124,9 +124,6 @@ export default class Left {
         [DISPLACEMENT]: displacement
       }
       fn.call(this.context || this, response, new Rectangle(this.startX, this.startY, -1, -1))
-      // this.element.style.left = displacement || dimension
-      // Block every scroll job on the screen
-      // document.body.style.overflow = Final.HIDDEN
     }
   }
 
@@ -200,7 +197,6 @@ export default class Left {
         close: false
       }
       fn.call(this.context || this, response, rect)
-      // this.element.style[DIRECTION] = dimension
     }
 
     // CLOSE LOGIC
@@ -212,7 +208,6 @@ export default class Left {
         open: false
       }
       fn.call(this.context || this, response, rect)
-      // this.element.style[DIRECTION] = vdimension
     }
   }
 
@@ -283,11 +278,9 @@ export default class Left {
       if (offsetSide <= this.width * threshold) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
-        // this.element.style[DIRECTION] = zero
       } else {
         thresholdState.state = [BELOW_THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
-        // this.element.style[DIRECTION] = nonZero
       }
       fn.call(this, action)
       return
@@ -295,16 +288,14 @@ export default class Left {
 
 
     // CLOSE LOGIC
-    if (nextAction === CLOSE && rect.displacementX < 0) {
+    if (nextAction === CLOSE && rect.displacementX < ZERO) {
       action = CLOSE
       if (offsetSide > this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
         thresholdState.stateObj = getResponse(thresholdState.state[0], false)
-        // this.element.style[DIRECTION] = nonZero
       } else {
         thresholdState.state = [BELOW_THRESHOLD, OPEN]
         thresholdState.stateObj = getResponse(thresholdState.state[0], false)
-        // this.element.style[DIRECTION] = zero
       }
       fn.call(this, action)
     }
