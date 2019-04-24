@@ -1,8 +1,11 @@
-import { css } from './../util'
+import {
+  css,
+  NAV_BOX_SHADOW
+} from './../util'
 
 const TRANSITION_STYLE = "ease"
 const EFFECT = "transition"
-const HASH = "menu"
+const TRANS_END = "transitionend"
 const UNIT = "px"
 
 class NavService {
@@ -30,8 +33,13 @@ class NavService {
     this.button.addEventListener(this.event, (e) => {
       this.handler.call(this, e)
     })
-    this.backdropElement.addEventListener(this.event, (e) => {
-      this.handler.call(this, e)
+    this.backdropElement.addEventListener(this.event, () => {
+      this._close()
+    })
+    this.nav.addEventListener(TRANS_END, () => {
+      if (!this.alive) {
+        this._cleanShadow()
+      }
     })
     return 0
   }
@@ -50,7 +58,8 @@ class NavService {
   _open() {
     let style = {
       [this.direction]: 0,
-      [EFFECT]: this.transition
+      [EFFECT]: this.transition,
+      boxShadow: NAV_BOX_SHADOW
     }
     NavService.css(this.nav, style)
     this.backdrop.show(this.options.TRANSITION)
@@ -61,10 +70,16 @@ class NavService {
     let style = {
       [this.direction]: `-${this._width(UNIT)}`,
       [EFFECT]: this.transition
+      // don't clean shadow here
+      // it's transitioning
     }
     NavService.css(this.nav, style)
     this.backdrop.hide(this.options.TRANSITION)
     this.alive = false
+  }
+
+  _cleanShadow() {
+    NavService.css(this.nav, 'boxShadow', 'none')
   }
 
   static css(el, property, style) {
