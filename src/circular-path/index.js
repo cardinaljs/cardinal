@@ -7,7 +7,7 @@ import {
 
 const ZERO = 0
 const DEG = 1 / RAD
-const RIGHT_ANGLE = POINT_ANGLE * HALF ** 2
+const RIGHT_ANGLE = POINT_ANGLE >> 2
 /**
  * Enum of all quadrants from first to fourth.
  * The quadrant is not a usual one; it starts from the 12th
