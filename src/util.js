@@ -1,6 +1,7 @@
 const MAX_THRESHOLD = 1
 const MIN_ILLEGAL_THRESHOLD = 0
 
+export const NAV_BOX_SHADOW = '0.2rem 0 0.2rem 0 rgba(0,0,0,.4)'
 export const ZERO = 0
 
 export function dataCamelCase(data) {
