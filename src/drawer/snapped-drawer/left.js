@@ -288,7 +288,7 @@ export default class Left {
 
 
     // CLOSE LOGIC
-    if (nextAction === CLOSE && rect.displacementX < ZERO) {
+    if (nextAction === CLOSE && rect.displacementX < ZERO && this.resumeX <= this.width) {
       action = CLOSE
       if (offsetSide > this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
