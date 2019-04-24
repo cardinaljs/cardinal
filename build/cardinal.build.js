@@ -26,6 +26,7 @@ const plugins = [
 const cardinal = {
   Nav: path.resolve(__dirname, '../src/nav/index.js'),
   Drawer: path.resolve(__dirname, '../src/drawer/index.js'),
+  CircularPath: path.resolve(__dirname, '../src/circular-path/index.js'),
   //Sheets: path.resolve(__dirname, '../src/sheets/index.js')
 }
 const distro = '../dist/'
