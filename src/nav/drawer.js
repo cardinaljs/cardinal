@@ -1,4 +1,5 @@
 import Drawer from './../drawer/'
+import { NAV_BOX_SHADOW } from './../util'
 
 const ZERO = 0
 const KILO = 1e3
@@ -12,7 +13,7 @@ const TRANS_TEMPLATE = `${TRANSITION_STYLE} ${TRANS_TIMING}`
 const HIDDEN = 'hidden'
 const SCROLL = 'scroll'
 const START = 'start'
-const END = 'end'
+const MOVE = 'move'
 const THRESHOLD = 'threshold'
 const BELOW_THRESHOLD = `below${THRESHOLD}`
 const DIRECTIONS = ['top', 'left', 'bottom', 'right']
@@ -34,29 +35,30 @@ class NavDrawer {
     /**
      * @type {HTMLBodyElement}
      */
-    this.body = this.options.BODY
+    this._body = this.options.BODY
+    this._backdrop = this.options.BACKDROP
     /**
      * @type {number}
      */
-    this.backdrop = this.options.BACKDROP
-    /**
-     * @type {string}
-     */
     this.direction = this.options.DIRECTION
+
+    this.checkDirection()
+
     this.directionString = DIRECTIONS[this.direction]
-    this.handlers = []
-    this.events = [
-      this.options.touchstart,
-      this.options.touchmove,
-      this.options.touchend
-    ]
 
     let o = {
       ...options,
+      SIZE: this.elementSize,
       TARGET: document
     }
-    this.drawer = new BoundDrawer(o)
+    this.drawer = new Drawer.SnappedDrawer(o)
     this.transition = `${this.directionString} ${TRANS_TEMPLATE}`
+  }
+
+  checkDirection() {
+    if (this.direction !== Drawer.LEFT && this.direction !== Drawer.RIGHT) {
+      throw RangeError('Direction out of range')
+    }
   }
 
   activate() {
@@ -76,7 +78,7 @@ class NavDrawer {
 
   get elementSize() {
     const axis = this.direction
-    if (axis === BoundDrawer.UP || axis === BoundDrawer.DOWN) {
+    if (axis === Drawer.UP || axis === Drawer.DOWN) {
       return this.element.offsetHeight
     } else {
       return this.element.offsetWidth
@@ -85,61 +87,91 @@ class NavDrawer {
 
   _startHandler(response, rectangle) {
     this.element.style[this.directionString] = response.displacement
+    this.element.style.boxShadow = NAV_BOX_SHADOW
     this.element.style[EFFECT] = this.transition
-    this.body.style.overflow = HIDDEN
+    this._body.style.overflow = HIDDEN
   }
 
   _moveHandler(response, rectangle) {
+    const curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2
     this.element.style[this.directionString] = response.dimension
     this.element.style[EFFECT] = this.transition
-    this.backdrop.setOpacity(rectangle.coordsX.x2 / this.elementSize)
+    this._backdrop.setOpacity(curPos / this.elementSize)
   }
 
   _threshold(state, stateObj) {
-    const wasOpen = state[1] === 'open'
-    if (wasOpen) {
-      this.body.style.overflow = SCROLL
-      this.backdrop.hide(this.options.TRANSITION)
-    } else {
-      this.body.style.overflow = HIDDEN
-      this.backdrop.show(this.options.TRANSITION)
+    const isOpen = state[1] === 'open'
+    const options = {
+      stateObj
     }
-    this.element.style[this.directionString] = stateObj.dimension
+    if (isOpen) {
+      this._hide(options)
+    } else {
+      this._show(options)
+    }
   }
 
   _belowThreshold(state, stateObj, rect) {
-    const wasClosed = state[1] !== 'open'
+    const isClosed = state[1] !== 'open'
     const overallEventTime = stateObj.TIMING
+    const MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD
+    const MPD = MIN_POSITIVE_DISPLACEMENT
+    const MND = MIN_NEGATIVE_DISPLACEMENT
+    const displacement = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rect.displacementY : rect.displacementX
+    const options = {
+      stateObj
+    }
+    const LOGIC = this.direction === Drawer.LEFT ? (displacement > ZERO && displacement >= MPD && rect.greaterWidth) : (displacement < ZERO && displacement <= MND && rect.greaterWidth)
 
-    if (overallEventTime / 1e3 < 0.7) {
+    if (overallEventTime / KILO < MTTOB) {
       console.log(overallEventTime)
-      const displacement = this.direction === BoundDrawer.UP || this.direction === BoundDrawer.DOWN ? rect.displacementY : rect.displacementX
-
-      if(displacement > 0 && displacement >= 40 && rect.greaterWidth) {
-        this.body.style.overflow = !wasClosed ? SCROLL : HIDDEN
-        this.element.style[this.directionString] = stateObj.oppositeDimension
-        this.backdrop.show(this.options.TRANSITION)
-        console.log(`yeah ${rect.width}`)
-      } else if (displacement < 0 && displacement <= -40 && rect.greaterWidth) {
-        if (!wasClosed) {
-          this.body.style.overflow = SCROLL
-          this.backdrop.hide(this.options.TRANSITION)
-        } else {
-          this.body.style.overflow = HIDDEN
-          this.backdrop.show(this.options.TRANSITION)
-        }
-        this.element.style[this.directionString] = stateObj.oppositeDimension
-      }
-
-    } else {
-      if (wasClosed) {
-        this.body.style.overflow = SCROLL
-        this.backdrop.hide(this.options.TRANSITION)
+      // DIRECTION: Drawer.UP | Drawer.LEFT
+      if (LOGIC) {
+        console.log(true)
+        this.__overrideBelowThresh(!isClosed, options)
       } else {
-        this.body.style.overflow = HIDDEN
-        this.backdrop.show(this.options.TRANSITION)
+        if (isClosed) {
+          // close it back didn't hit thresh. and can't override
+          this._hide(options)
+        } else {
+          // open it back didn't hit thresh. and can't override because not enough displacement
+          this._show(options)
+        }
       }
-      this.element.style[this.directionString] = stateObj.dimension
+    } else {
+      if (isClosed) {
+        // close it back didn't hit thresh. and can't override because not enough velocity or displacement
+        this._hide(options)
+      } else {
+        // open it back didn't hit thresh. and can't override because not enough velocity or displacement
+        this._show(options)
+      }
+    }
+  }
+
+  _show(options) {
+    this._body.style.overflow = HIDDEN
+    this._backdrop.show(this.options.TRANSITION)
+    this.element.style[this.directionString] = options.stateObj.dimension
+  }
+
+  _hide(options) {
+    this._body.style.overflow = SCROLL
+    this._backdrop.hide(this.options.TRANSITION)
+    this.element.style[this.directionString] = options.stateObj.dimension
+    this.element.style.boxShadow = 'none'
+  }
+
+  __overrideBelowThresh(isOpen, options) {
+    if (isOpen) {
+      this._body.style.overflow = SCROLL
+      this._backdrop.hide(this.options.TRANSITION)
+      this.element.style[this.directionString] = options.stateObj.oppositeDimension
+      this.element.style.boxShadow = 'none'
+    } else {
+      this._body.style.overflow = HIDDEN
+      this._backdrop.show(this.options.TRANSITION)
+      this.element.style[this.directionString] = options.stateObj.oppositeDimension
     }
   }
 }
