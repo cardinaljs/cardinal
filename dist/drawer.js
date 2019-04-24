@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-04-15T12:08:04.261Z
+  * Build Date: 2019-04-24T13:14:21.606Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -76,16 +76,7 @@
 
   var MAX_THRESHOLD = 1;
   var MIN_ILLEGAL_THRESHOLD = 0;
-
-  var Final = function Final() {};
-
-  _defineProperty(Final, "START", 2);
-
-  _defineProperty(Final, "HIDDEN", 'hidden');
-
-  _defineProperty(Final, "ZERO", 0);
-
-  _defineProperty(Final, "DISPLAY", 'block');
+  var ZERO = 0;
   function validateThreshold(tsh) {
     if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
       tsh = MAX_THRESHOLD - tsh;
@@ -139,10 +130,8 @@
       var dimension = "-" + (this.height - start) + this.unit;
       var displacement = "-" + (this.height - Final.START) + this.unit;
 
-      if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO) {
-        this.element.style.bottom = displacement || dimension; // Block every scroll job on the screen
-
-        document.body.style.overflow = Final.HIDDEN;
+      if (start >= ZERO && start <= this.maxArea && currentPosition !== Final.ZERO) {
+        this.element.style.bottom = displacement || dimension;
       }
     };
 
@@ -206,7 +195,7 @@
     _inheritsLoose(Rectangle, _Vector);
 
     function Rectangle(x1, y1, x2, y2) {
-      return _Vector.call(this, x1, y1, x2, y2) || this; //this.inheritted = true
+      return _Vector.call(this, x1, y1, x2, y2) || this;
     } // getter
 
 
@@ -219,8 +208,7 @@
       key: "height",
       get: function get() {
         return Math.abs(this.displacementY);
-      } // methods
-
+      }
     }, {
       key: "greaterWidth",
       get: function get() {
@@ -246,7 +234,8 @@
   var CLOSE = 'close';
   var UNIT = 'px';
   var MAX_START_AREA = 25;
-  var THRESHOLD_VALUE = 0.666666666;
+  var THRESHOLD_VALUE = 0.666;
+  var FALSE_TOUCH_START_POINT = 2;
 
   var Left =
   /*#__PURE__*/
@@ -273,7 +262,7 @@
        * @type {number}
        */
 
-      this.width = this.element.offsetWidth;
+      this.width = this.options.SIZE;
       this.unit = this.options.unit || UNIT;
       /**
        * @type {number}
@@ -325,7 +314,7 @@
     }
     /**
      * The `touchstart` event handler for the `Left` drawer `class`
-     * @param {{}} e an event `object`: An event `object`
+     * @param {TouchEvent} e an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchstart` event.
      * @param {Function} fn - a callback function called when the `start`
@@ -342,27 +331,25 @@
       this.startX = start;
       this.startY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       /**
-       * The `Drawer`'s `Left` class uses the `CSS property` -- `left`
+       * The `Drawer`'s `Left` class uses the `CSS property`, `left`
        * for updating and defining position of the drawn element
        */
 
       var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
       this.positionOnStart = currentPosition;
       var dimension = "-" + (this.width - start) + this.unit;
-      var displacement = "-" + (this.width - Final.START) + this.unit;
+      var displacement = "-" + (this.width - FALSE_TOUCH_START_POINT) + this.unit;
 
-      if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO) {
+      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
         var _response;
 
         var response = (_response = {}, _response[EVENT_OBJ] = e, _response[DIMENSION] = dimension, _response[DISPLACEMENT] = displacement, _response);
-        fn.call(this.context || this, response, new Rectangle$1(this.startX, this.startY, -1, -1)); // this.element.style.left = displacement || dimension
-        // Block every scroll job on the screen
-        // document.body.style.overflow = Final.HIDDEN
+        fn.call(this.context || this, response, new Rectangle$1(this.startX, this.startY, -1, -1));
       }
     }
     /**
-     * The `touchstart` event handler for the `Left` drawer `class`
-     * @param {{}} e an event `object`: An event `object`
+     * The `touchmove` event handler for the `Left` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchmove` event.
      * @param {Function} fn - a callback function called when the `move`
@@ -376,7 +363,7 @@
       this.resumeX = resume;
       this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
-      var nextAction = this.positionOnStart === Final.ZERO ? CLOSE : OPEN;
+      var nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN;
       var start = this.startX;
       var width = this.width;
       /**
@@ -416,25 +403,25 @@
       } // OPEN LOGIC
 
 
-      if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > Final.ZERO) {
+      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > ZERO) {
         var _response2;
 
         var response = (_response2 = {}, _response2[EVENT_OBJ] = e, _response2[DIMENSION] = dimension, _response2.open = true, _response2.close = false, _response2);
-        fn.call(this.context || this, response, rect); // this.element.style[DIRECTION] = dimension
+        fn.call(this.context || this, response, rect);
       } // CLOSE LOGIC
 
 
-      if (currentPosition !== this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < Final.ZERO) {
+      if (resume <= this.width && currentPosition <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
         var _response4;
 
         var _response3 = (_response4 = {}, _response4[EVENT_OBJ] = e, _response4[DIMENSION] = vdimension, _response4.close = true, _response4.open = false, _response4);
 
-        fn.call(this.context || this, _response3, rect); // this.element.style[DIRECTION] = vdimension
+        fn.call(this.context || this, _response3, rect);
       }
     }
     /**
-     * The `touchstart` event handler for the `Left` drawer `class`
-     * @param {{}} e an event `object`: An event `object`
+     * The `touchend` event handler for the `Left` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchend` event.
      * @param {Function} fn - a callback function called when the `end`
@@ -458,13 +445,13 @@
       var threshold = this.threshold;
       var signedOffsetSide = parseFloat(Left._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
       var nonZero = "-" + this.width + "px";
-      var zero = "" + Final.ZERO;
+      var zero = "" + ZERO;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN; // release the control for another session
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
-      var nextAction = this.positionOnStart === Final.ZERO ? CLOSE : OPEN;
+      var nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN;
       var response = (_response5 = {}, _response5[EVENT_OBJ] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
@@ -487,10 +474,10 @@
       if (nextAction === OPEN && start <= this.maxArea) {
         if (offsetSide <= this.width * threshold) {
           thresholdState.state = [THRESHOLD, CLOSE];
-          thresholdState.stateObj = getResponse(thresholdState.state[0], true); // this.element.style[DIRECTION] = zero
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         } else {
           thresholdState.state = [BELOW_THRESHOLD, CLOSE];
-          thresholdState.stateObj = getResponse(thresholdState.state[0], true); // this.element.style[DIRECTION] = nonZero
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         }
 
         fn.call(this, action);
@@ -498,15 +485,15 @@
       } // CLOSE LOGIC
 
 
-      if (nextAction === CLOSE && rect.displacementX < 0) {
+      if (nextAction === CLOSE && rect.displacementX < ZERO && this.resumeX <= this.width) {
         action = CLOSE;
 
         if (offsetSide > this.width * threshold) {
           thresholdState.state = [THRESHOLD, OPEN];
-          thresholdState.stateObj = getResponse(thresholdState.state[0], false); // this.element.style[DIRECTION] = nonZero
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         } else {
           thresholdState.state = [BELOW_THRESHOLD, OPEN];
-          thresholdState.stateObj = getResponse(thresholdState.state[0], false); // this.element.style[DIRECTION] = zero
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         }
 
         fn.call(this, action);
@@ -610,12 +597,10 @@
 
       var currentPosition = parseFloat(this.element.style.right.replace(/[^\d]*$/, ''));
       var dimension = "-" + (this.width - (this.winSize - start)) + this.unit;
-      var displacement = "-" + (this.width - Final.START) + this.unit;
+      var displacement = "-" + (this.width - START) + this.unit;
 
-      if (start >= Final.ZERO && start <= this.maxArea && currentPosition !== Final.ZERO) {
-        this.element.style.right = displacement || dimension; // Block every scroll job on the screen
-
-        document.body.style.overflow = Final.HIDDEN;
+      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
+        this.element.style.right = displacement || dimension;
       }
     }
     /**
@@ -682,10 +667,6 @@
        */
 
       var vdimension = "-" + (resume - virtualStart) + this.unit;
-      var backdropSheet = {
-        opacity: (this.winSize - resume) / width,
-        display: Final.DISPLAY
-      };
       var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundX = rect.wGTh(); // eslint-disable-next-line no-unused-expression, no-sequence, no-extra-parens
 
@@ -754,12 +735,10 @@
 
       var currentPosition = parseFloat(this.element.style.top.replace(/[^\d]*$/, ''));
       var dimension = "-" + (this.height - start) + this.unit;
-      var displacement = "-" + (this.height - Final.START) + this.unit;
+      var displacement = "-" + (this.height - START) + this.unit;
 
-      if (start >= Final.ZERO && start <= this.maxArea && currentPosition != Final.ZERO) {
-        this.element.style.top = displacement || dimension; // Block every scroll job on the screen
-
-        document.body.style.overflow = Final.HIDDEN;
+      if (start >= ZERO && start <= this.maxArea && currentPosition != ZERO) {
+        this.element.style.top = displacement || dimension;
       }
     };
 
@@ -788,44 +767,44 @@
     return Top;
   }();
 
-  var START = 'start';
+  var BELOW_THRESHOLD$1 = 'belowthreshold';
+  var THRESHOLD$1 = 'threshold';
+  var START$1 = 'start';
   var MOVE = 'move';
   var END = 'end';
-  var THRESHOLD$1 = 'threshold';
-  var BELOW_THRESHOLD$1 = 'belowthreshold';
 
-  var Drawer =
+  var SnappedDrawer =
   /*#__PURE__*/
   function () {
     /**
      *
-     * @param {{}} options - an object of configuration options
+     * @param {{}} options an object of configuration options
      */
-    function Drawer(options) {
-      this.options = options;
+    function SnappedDrawer(options) {
+      this._options = options;
       /**
        * @type {HTMLElement}
        */
 
-      this.element = options.ELEMENT;
-      this.target = options.TARGET;
+      this._element = options.ELEMENT;
+      this._target = options.TARGET;
       this.events = ['touchstart', 'touchmove', 'touchend'];
-      this.handlers = null;
-      this.direction = options.DIRECTION;
-      this.callibration = null;
+      this._handlers = null;
+      this._direction = options.DIRECTION;
+      this._callibration = null;
       /**
-       *
        * @type {{}}
        */
 
-      this.callbacks = null;
-      this.context = null;
+      this._callbacks = null;
+      this._context = null;
+
+      this._setCalibration(this._direction);
     } // enum
 
 
-    var _proto = Drawer.prototype;
+    var _proto = SnappedDrawer.prototype;
 
-    // eslint-disable-line no-magic-numbers
     // public
 
     /**
@@ -839,33 +818,31 @@
       var _this = this;
 
       // get registered callbacks or set default
-      var startfn = this.callbacks ? this.callbacks[START] : def;
-      var movefn = this.callbacks ? this.callbacks[MOVE] : def;
-      var endfn = this.callbacks ? this.callbacks[END] : def;
-
-      this._setCalibration(this.direction);
+      var startfn = this._callbacks ? this._callbacks[START$1] : def;
+      var movefn = this._callbacks ? this._callbacks[MOVE] : def;
+      var endfn = this._callbacks ? this._callbacks[END] : def;
 
       var startHandler = function startHandler(e) {
-        if (_this.direction !== null) {
-          _this.callibration.start(e, startfn);
+        if (_this._direction !== null) {
+          _this._callibration.start(e, startfn);
         } else {
           _this.deactivate();
         }
       };
 
       var moveHandler = function moveHandler(e) {
-        if (_this.direction !== null) {
-          _this.callibration.move(e, movefn);
+        if (_this._direction !== null) {
+          _this._callibration.move(e, movefn);
         } else {
           _this.deactivate();
         }
       };
 
       var endHandler = function endHandler(e) {
-        if (_this.direction !== null) {
+        if (_this._direction !== null) {
           var state = {};
 
-          _this.callibration.end(e, endfn, state); // state by Ref
+          _this._callibration.end(e, endfn, state); // state by Ref
 
 
           _this._processThresholdState(state);
@@ -877,7 +854,7 @@
       this._register(startHandler, moveHandler, endHandler);
 
       for (var i = 0; i < this.events.length; i++) {
-        this.target.addEventListener(this.events[i], this.handlers[i]);
+        this._target.addEventListener(this.events[i], this._handlers[i]);
       }
     }
     /**
@@ -888,7 +865,7 @@
 
     _proto.deactivate = function deactivate() {
       for (var i = 0; i < this.events; i++) {
-        this.target.removeEventListener(this.events[i], this.handlers[i]);
+        this._target.removeEventListener(this.events[i], this._handlers[i]);
       }
 
       this._register();
@@ -935,7 +912,7 @@
      * - `belowthreshold`
      * @param {string} event The event type as in the above list
      * @param {Function} fn A function to call when this event triggers
-     * @returns {Drawer} Returns a instance of the `Drawer` class
+     * @returns {this} Returns an instance variable of the `Drawer` class
      */
     ;
 
@@ -946,11 +923,10 @@
     };
 
     _proto.setContext = function setContext(ctx) {
-      this.context = ctx;
-      this.left.setContext(ctx);
-      this.right.setContext(ctx);
-      this.up.setContext(ctx);
-      this.down.setContext(ctx);
+      this._context = ctx;
+
+      this._callibration.setContext(ctx);
+
       return this;
     };
 
@@ -962,36 +938,40 @@
       var thState = state.state[0];
       var vector = state.stateObj.rect;
       delete state.stateObj.rect;
-      this.callbacks[thState].call(this.context || this, state.state, state.stateObj, vector);
+
+      this._callbacks[thState].call(this._context || this, state.state, state.stateObj, vector);
     };
 
     _proto._setCalibration = function _setCalibration(point) {
       switch (point) {
-        case Drawer.UP:
-          this.callibration = new Top(this.options);
+        case SnappedDrawer.UP:
+          this._callibration = new Top(this._options);
           break;
 
-        case Drawer.LEFT:
-          this.callibration = new Left(this.options);
+        case SnappedDrawer.LEFT:
+          this._callibration = new Left(this._options);
           break;
 
-        case Drawer.DOWN:
-          this.callibration = new Bottom(this.options);
+        case SnappedDrawer.DOWN:
+          this._callibration = new Bottom(this._options);
           break;
 
-        case Drawer.RIGHT:
-          this.callibration = new Right(this.options);
+        case SnappedDrawer.RIGHT:
+          this._callibration = new Right(this._options);
           break;
+
+        default:
+          throw RangeError('Direction out of range');
       }
     };
 
     _proto._registerCallbacks = function _registerCallbacks(event, fn) {
       var _ref;
 
-      this.callbacks = this.callbacks || (_ref = {}, _ref[START] = def, _ref[MOVE] = def, _ref[END] = def, _ref[THRESHOLD$1] = def, _ref[BELOW_THRESHOLD$1] = def, _ref);
+      this._callbacks = this._callbacks || (_ref = {}, _ref[START$1] = def, _ref[MOVE] = def, _ref[END] = def, _ref[THRESHOLD$1] = def, _ref[BELOW_THRESHOLD$1] = def, _ref);
 
-      if (event in this.callbacks) {
-        this.callbacks[event] = fn;
+      if (event in this._callbacks) {
+        this._callbacks[event] = fn;
       }
     } // private
     ;
@@ -1001,23 +981,35 @@
         handlers[_key] = arguments[_key];
       }
 
-      this.handlers = [].concat(handlers);
+      this._handlers = [].concat(handlers);
     };
 
-    return Drawer;
+    return SnappedDrawer;
   }();
 
-  _defineProperty(Drawer, "UP", 0);
+  _defineProperty(SnappedDrawer, "UP", 0);
 
-  _defineProperty(Drawer, "LEFT", 1);
+  _defineProperty(SnappedDrawer, "LEFT", 1);
 
-  _defineProperty(Drawer, "DOWN", 2);
+  _defineProperty(SnappedDrawer, "DOWN", 2);
 
-  _defineProperty(Drawer, "RIGHT", 3);
+  _defineProperty(SnappedDrawer, "RIGHT", 3);
 
   function def() {
     return false;
   }
+
+  var Drawer = function Drawer() {};
+
+  _defineProperty(Drawer, "SnappedDrawer", SnappedDrawer);
+
+  _defineProperty(Drawer, "UP", SnappedDrawer.UP);
+
+  _defineProperty(Drawer, "LEFT", SnappedDrawer.LEFT);
+
+  _defineProperty(Drawer, "DOWN", SnappedDrawer.DOWN);
+
+  _defineProperty(Drawer, "RIGHT", SnappedDrawer.RIGHT);
 
   return Drawer;
 

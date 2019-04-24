@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-04-15T12:08:04.261Z
+  * Build Date: 2019-04-24T13:14:21.606Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -17,9 +17,9 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('../drawer/index.js')) :
   typeof define === 'function' && define.amd ? define(['../drawer/index.js'], factory) :
   (global = global || self, global.Nav = factory(global.Drawer));
-}(this, function (BoundDrawer) { 'use strict';
+}(this, function (Drawer$1) { 'use strict';
 
-  BoundDrawer = BoundDrawer && BoundDrawer.hasOwnProperty('default') ? BoundDrawer['default'] : BoundDrawer;
+  Drawer$1 = Drawer$1 && Drawer$1.hasOwnProperty('default') ? Drawer$1['default'] : Drawer$1;
 
   function _defineProperties(target, props) {
     for (var i = 0; i < props.length; i++) {
@@ -35,21 +35,6 @@
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
     return Constructor;
-  }
-
-  function _defineProperty(obj, key, value) {
-    if (key in obj) {
-      Object.defineProperty(obj, key, {
-        value: value,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      });
-    } else {
-      obj[key] = value;
-    }
-
-    return obj;
   }
 
   function _extends() {
@@ -70,15 +55,7 @@
     return _extends.apply(this, arguments);
   }
 
-  var Final = function Final() {};
-
-  _defineProperty(Final, "START", 2);
-
-  _defineProperty(Final, "HIDDEN", 'hidden');
-
-  _defineProperty(Final, "ZERO", 0);
-
-  _defineProperty(Final, "DISPLAY", 'block');
+  var NAV_BOX_SHADOW = '0.2rem 0 0.2rem 0 rgba(0,0,0,.4)';
   function dataCamelCase(data) {
     // remove 'data-' prefix and return camelCase string
     return camelCase(data.substring(5), '-');
@@ -116,7 +93,21 @@
 
     return getAttribute(el, attr);
   }
+  /**
+   * @param {HTMLElement} el an HTMLElement whose style should
+   * be accessed
+   * @param {string | string[] | {}} property A property/properties
+   * to set or get
+   * @param {string | number} style value to set as
+   * @returns {CSSStyleDeclaration | string} A css style property
+   * or CSSStyleDeclaration object
+   */
+
   function css(el, property, style) {
+    if (style === void 0) {
+      style = null;
+    }
+
     var STYLEMAP = window.getComputedStyle(el);
     style = style || null;
     property = property || null;
@@ -124,7 +115,7 @@
     if (typeof property === 'string' && style !== null) {
       // setting one property
       el.style[property] = style;
-      return;
+      return null;
     }
 
     if (typeof property === 'object' && property instanceof Object) {
@@ -165,6 +156,8 @@
       // get style from property
       return STYLEMAP[property];
     }
+
+    return STYLEMAP;
   }
 
   var Backdrop =
@@ -180,7 +173,7 @@
       css(this.backdrop, {
         display: 'block',
         opacity: 1,
-        transition: "opacity linear " + time / 1e3
+        transition: "opacity linear " + time / 1e3 + "s"
       });
     };
 
@@ -189,7 +182,7 @@
 
       css(this.backdrop, {
         opacity: 0,
-        transition: "opacity linear " + time / 1e3
+        transition: "opacity linear " + time / 1e3 + "s"
       });
       window.setTimeout(function () {
         css(_this.backdrop, {
@@ -211,6 +204,7 @@
 
   var TRANSITION_STYLE = "ease";
   var EFFECT = "transition";
+  var TRANS_END = "transitionend";
   var UNIT = "px";
 
   var NavService =
@@ -244,8 +238,13 @@
       this.button.addEventListener(this.event, function (e) {
         _this.handler.call(_this, e);
       });
-      this.backdropElement.addEventListener(this.event, function (e) {
-        _this.handler.call(_this, e);
+      this.backdropElement.addEventListener(this.event, function () {
+        _this._close();
+      });
+      this.nav.addEventListener(TRANS_END, function () {
+        if (!_this.alive) {
+          _this._cleanShadow();
+        }
       });
       return 0;
     };
@@ -264,7 +263,7 @@
     _proto._open = function _open() {
       var _style;
 
-      var style = (_style = {}, _style[this.direction] = 0, _style[EFFECT] = this.transition, _style);
+      var style = (_style = {}, _style[this.direction] = 0, _style[EFFECT] = this.transition, _style.boxShadow = NAV_BOX_SHADOW, _style);
       NavService.css(this.nav, style);
       this.backdrop.show(this.options.TRANSITION);
       this.alive = true;
@@ -277,6 +276,10 @@
       NavService.css(this.nav, style);
       this.backdrop.hide(this.options.TRANSITION);
       this.alive = false;
+    };
+
+    _proto._cleanShadow = function _cleanShadow() {
+      NavService.css(this.nav, 'boxShadow', 'none');
     };
 
     NavService.css = function css$1(el, property, style) {
@@ -346,9 +349,15 @@
     return HashState;
   }();
 
+  var ZERO = 0;
+  var KILO = 1e3;
+  var MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.7;
+  var MIN_POSITIVE_DISPLACEMENT = 40;
+  var MIN_NEGATIVE_DISPLACEMENT = -MIN_POSITIVE_DISPLACEMENT;
   var TRANSITION_STYLE$2 = 'linear';
   var EFFECT$1 = 'transition';
   var TRANS_TIMING = '0.1s'; // This value is basic, the calc'ed value will depend on drawer speed
+
   var TRANS_TEMPLATE = TRANSITION_STYLE$2 + " " + TRANS_TIMING;
   var HIDDEN = 'hidden';
   var SCROLL = 'scroll';
@@ -362,7 +371,10 @@
   /*#__PURE__*/
   function () {
     /**
-     *
+     * Creates a new NavDrawer object. Providing the Left and Right
+     * Drawer functionality.
+     * Support for Top and Bottom may come in the future
+     * @throws RangeError
      * @param {{}} options An options Object to configure the Drawer with
      */
     function NavDrawer(options) {
@@ -373,33 +385,35 @@
 
       this.element = this.options.ELEMENT;
       /**
-       * @type {HTMLElement}
+       * @type {HTMLBodyElement}
        */
 
-      this.body = this.options.BODY;
+      this._body = this.options.BODY;
+      this._backdrop = this.options.BACKDROP;
       /**
-       * @type {HTMLElement}
-       */
-
-      this.backdrop = this.options.BACKDROP;
-      /**
-       * @type {string}
+       * @type {number}
        */
 
       this.direction = this.options.DIRECTION;
+      this.checkDirection();
       this.directionString = DIRECTIONS[this.direction];
-      this.handlers = [];
-      this.events = [this.options.touchstart, this.options.touchmove, this.options.touchend];
 
       var o = _extends({}, options, {
+        SIZE: this.elementSize,
         TARGET: document
       });
 
-      this.drawer = new BoundDrawer(o);
+      this.drawer = new Drawer$1.SnappedDrawer(o);
       this.transition = this.directionString + " " + TRANS_TEMPLATE;
     }
 
     var _proto = NavDrawer.prototype;
+
+    _proto.checkDirection = function checkDirection() {
+      if (this.direction !== Drawer$1.LEFT && this.direction !== Drawer$1.RIGHT) {
+        throw RangeError('Direction out of range');
+      }
+    };
 
     _proto.activate = function activate() {
       this.drawer.on(START, this._startHandler).on(MOVE, this._moveHandler).on(THRESHOLD, this._threshold).on(BELOW_THRESHOLD, this._belowThreshold).setContext(this).activate();
@@ -413,64 +427,102 @@
 
     _proto._startHandler = function _startHandler(response, rectangle) {
       this.element.style[this.directionString] = response.displacement;
+      this.element.style.boxShadow = NAV_BOX_SHADOW;
       this.element.style[EFFECT$1] = this.transition;
-      this.body.style.overflow = HIDDEN;
+      this._body.style.overflow = HIDDEN;
     };
 
     _proto._moveHandler = function _moveHandler(response, rectangle) {
+      var curPos = this.direction === Drawer$1.UP || this.direction === Drawer$1.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2;
       this.element.style[this.directionString] = response.dimension;
       this.element.style[EFFECT$1] = this.transition;
-      this.backdrop.setOpacity(rectangle.coordsX.x2 / this.elementSize);
+
+      this._backdrop.setOpacity(curPos / this.elementSize);
     };
 
     _proto._threshold = function _threshold(state, stateObj) {
-      var wasOpen = state[1] === 'open';
+      var isOpen = state[1] === 'open';
+      var options = {
+        stateObj: stateObj
+      };
 
-      if (wasOpen) {
-        this.body.style.overflow = SCROLL;
-        this.backdrop.hide(this.options.TRANSITION);
+      if (isOpen) {
+        this._hide(options);
       } else {
-        this.body.style.overflow = HIDDEN;
-        this.backdrop.show(this.options.TRANSITION);
+        this._show(options);
       }
-
-      this.element.style[this.directionString] = stateObj.dimension;
     };
 
     _proto._belowThreshold = function _belowThreshold(state, stateObj, rect) {
-      var wasClosed = state[1] !== 'open';
+      var isClosed = state[1] !== 'open';
       var overallEventTime = stateObj.TIMING;
+      var MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD;
+      var MPD = MIN_POSITIVE_DISPLACEMENT;
+      var MND = MIN_NEGATIVE_DISPLACEMENT;
+      var displacement = this.direction === Drawer$1.UP || this.direction === Drawer$1.DOWN ? rect.displacementY : rect.displacementX;
+      var options = {
+        stateObj: stateObj
+      };
+      var LOGIC = this.direction === Drawer$1.LEFT ? displacement > ZERO && displacement >= MPD && rect.greaterWidth : displacement < ZERO && displacement <= MND && rect.greaterWidth;
 
-      if (overallEventTime / 1e3 < 0.7) {
-        console.log(overallEventTime);
-        var displacement = this.direction === BoundDrawer.UP || this.direction === BoundDrawer.DOWN ? rect.displacementY : rect.displacementX;
+      if (overallEventTime / KILO < MTTOB) {
+        console.log(overallEventTime); // DIRECTION: Drawer.UP | Drawer.LEFT
 
-        if (displacement > 0 && displacement >= 40 && rect.greaterWidth) {
-          this.body.style.overflow = !wasClosed ? SCROLL : HIDDEN;
-          this.element.style[this.directionString] = stateObj.oppositeDimension;
-          this.backdrop.show(this.options.TRANSITION);
-          console.log("yeah " + rect.width);
-        } else if (displacement < 0 && displacement <= -40 && rect.greaterWidth) {
-          if (!wasClosed) {
-            this.body.style.overflow = SCROLL;
-            this.backdrop.hide(this.options.TRANSITION);
+        if (LOGIC) {
+          console.log(true);
+
+          this.__overrideBelowThresh(!isClosed, options);
+        } else {
+          if (isClosed) {
+            // close it back didn't hit thresh. and can't override
+            this._hide(options);
           } else {
-            this.body.style.overflow = HIDDEN;
-            this.backdrop.show(this.options.TRANSITION);
+            // open it back didn't hit thresh. and can't override because not enough displacement
+            this._show(options);
           }
-
-          this.element.style[this.directionString] = stateObj.oppositeDimension;
         }
       } else {
-        if (wasClosed) {
-          this.body.style.overflow = SCROLL;
-          this.backdrop.hide(this.options.TRANSITION);
+        if (isClosed) {
+          // close it back didn't hit thresh. and can't override because not enough velocity or displacement
+          this._hide(options);
         } else {
-          this.body.style.overflow = HIDDEN;
-          this.backdrop.show(this.options.TRANSITION);
+          // open it back didn't hit thresh. and can't override because not enough velocity or displacement
+          this._show(options);
         }
+      }
+    };
 
-        this.element.style[this.directionString] = stateObj.dimension;
+    _proto._show = function _show(options) {
+      this._body.style.overflow = HIDDEN;
+
+      this._backdrop.show(this.options.TRANSITION);
+
+      this.element.style[this.directionString] = options.stateObj.dimension;
+    };
+
+    _proto._hide = function _hide(options) {
+      this._body.style.overflow = SCROLL;
+
+      this._backdrop.hide(this.options.TRANSITION);
+
+      this.element.style[this.directionString] = options.stateObj.dimension;
+      this.element.style.boxShadow = 'none';
+    };
+
+    _proto.__overrideBelowThresh = function __overrideBelowThresh(isOpen, options) {
+      if (isOpen) {
+        this._body.style.overflow = SCROLL;
+
+        this._backdrop.hide(this.options.TRANSITION);
+
+        this.element.style[this.directionString] = options.stateObj.oppositeDimension;
+        this.element.style.boxShadow = 'none';
+      } else {
+        this._body.style.overflow = HIDDEN;
+
+        this._backdrop.show(this.options.TRANSITION);
+
+        this.element.style[this.directionString] = options.stateObj.oppositeDimension;
       }
     };
 
@@ -479,7 +531,7 @@
       get: function get() {
         var axis = this.direction;
 
-        if (axis === BoundDrawer.UP || axis === BoundDrawer.DOWN) {
+        if (axis === Drawer$1.UP || axis === Drawer$1.DOWN) {
           return this.element.offsetHeight;
         } else {
           return this.element.offsetWidth;
