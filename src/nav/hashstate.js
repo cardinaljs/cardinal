@@ -11,8 +11,8 @@ class HashState {
     this.event = 'hashchange'
     this.direction = options.DIRECTION
     this.width = this.nav.offSetWidth
-    this.trans_time = options.transition/1e3
-    this.transition = `${this.direction} ${TRANSITION_STYLE} ${this.trans_time}s`
+    this.transTime = options.transition / 1e3
+    this.transition = `${this.direction} ${TRANSITION_STYLE} ${this.transTime}s`
     // state of the nav, whether open or close
     this.alive = false
   }
@@ -23,20 +23,18 @@ class HashState {
   }
 
   handler(e) {
-    let hash = HashState._getHash(e)
-    let ns = new NavService(this.options)
+    const hash = HashState._getHash(e)
+    const ns = new NavService(this.options)
     if (hash === null) {
       ns._close()
     } else if (hash === this.button.getAttribute('href')) {
       ns._open()
-    } else {
-      return
     }
   }
 
   static _getHash(e) {
     let hash = e.newURL
-    let indexOfHash = hash.lastIndexOf('#')
+    const indexOfHash = hash.lastIndexOf('#')
     hash = indexOfHash !== -1 ? hash.slice(indexOfHash).replace(/(?:[^\w\d-]+)$/) : null
     return hash
   }
@@ -46,4 +44,5 @@ class HashState {
     return 0
   }
 }
+
 export default HashState
