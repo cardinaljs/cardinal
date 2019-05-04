@@ -98,7 +98,7 @@ class NavCard {
     }
 
     if (opts.backdrop) {
-      const backdropclass = !!opts.backdropClass ? opts.backdropClass : false
+      const backdropclass = opts.backdropClass ? opts.backdropClass : false
       // if `opts.backdrop` and no `backdropclass` given
       // append our custom backdrop
       if (!backdropclass) {
