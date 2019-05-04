@@ -1,22 +1,31 @@
-import { Backdrop } from './backdrop'
+import {
+  $,
+  css,
+  getAttribute,
+  getData,
+  hasAttribute,
+  setAttribute,
+  unique
+} from './../util'
+import {
+  Backdrop
+} from './backdrop'
 import HashState from './hashstate'
 import NavDrawer from './drawer'
 import NavService from './navservice'
-import { css, getData, getAttribute, hasAttribute, setAttribute, unique, $ } from '../util'
 
-const BACKDROP = "backdrop"
-const DEF_CLASSNAME = "cardinal-navcard"
-const MEDIA_HASH = "data-hash-max-width"
-const MEDIA_DRAW = "data-draw-max-width"
-const _CLASS = "class"
+const BACKDROP = 'backdrop'
+const DEF_CLASSNAME = 'cardinal-navcard'
+const MEDIA_HASH = 'data-hash-max-width'
+const MEDIA_DRAW = 'data-draw-max-width'
+const _CLASS = 'class'
 const EVENTS = {
-  touchend: "touchend",
-  touchmove: "touchmove",
-  touchstart: "touchstart"
+  touchend: 'touchend',
+  touchmove: 'touchmove',
+  touchstart: 'touchstart'
 }
 
 class NavCard {
-
   constructor() {
     // **Do not insert the below element into DOM**
     /**
@@ -24,8 +33,9 @@ class NavCard {
      * just incase `options.backdrop = false`
      * prevent multiple `if` statements
      * so we don't have to check whether
-     * backdrop is enabled anytime we want to access it
-     * insert into DOM only:
+     * backdrop is enabled anytime we want to access it.
+     *
+     * Insert into DOM only:
      * when `options.backdrop = true`
      * `options.backdropClass` is undefined
     */
@@ -49,82 +59,84 @@ class NavCard {
     this.HashState = null
 
     NavCard.defaultConfig = {
-      type: "nav",
+      type: 'nav',
       transition: 500,
-      event: "click",
-      direction: "left",
+      event: 'click',
+      direction: 'left',
       backdrop: false,
       backdropClass: null,
-      accessAttr: "data-target",
+      accessAttr: 'data-target',
       maxStartArea: 25,
-      threshold: 1/2,
+      threshold: 1 / 2,
       unit: 'px'
     }
 
     NavCard.API = {
-      DEFAULT: 0,
-      DRAWER: 1,
-      HASH: 2,
+      DEFAULT: 1,
+      DRAWER: 3,
+      HASH: 7
     }
   }
 
   setup(_elem, options) {
-    let element,
-      backdrop,
-      dataAccess,
-      opts,
-      HASH_NAV_MAX_WIDTH,
-      NAV_DRAW_MAX_WIDTH,
-      destinationId,
-      destination
+    let backdrop
+    let HASH_NAV_MAX_WIDTH
+    let NAV_DRAW_MAX_WIDTH
+    let destinationId
+    let destination
 
-    opts = NavCard.defaultConfig
+    const opts = NavCard.defaultConfig
 
-    if (options && "object" === typeof options) {
-      for (let prop of Object.keys(options)) {
-        if (opts.hasOwnProperty(prop))
+    if (options && typeof options === 'object') {
+      for (const prop of Object.keys(options)) {
+        if (Object.prototype.hasOwnProperty.call(opts, prop)) {
           opts[prop] = options[prop]
-        else
+        } else {
           continue
+        }
       }
     }
 
     if (opts.backdrop) {
-      let backdrop_class = !!opts.backdropClass ? opts.backdropClass : false
-      // if `opts.backdrop` and no `backdrop_class` given
+      const backdropclass = !!opts.backdropClass ? opts.backdropClass : false
+      // if `opts.backdrop` and no `backdropclass` given
       // append our custom backdrop
-      if (!backdrop_class) this.body.append(this.backdrop)
-
-      if (typeof backdrop_class === 'string') {
-        // check if backdrop_class is normal string or css class selector
-        backdrop =  /^\./.test(backdrop_class) ? backdrop_class : `.${backdrop_class}`
-        this.backdrop = $(backdrop)
+      if (!backdropclass) {
+        this.body.append(this.backdrop)
       }
 
+      if (typeof backdropclass === 'string') {
+        // check if backdropclass is normal string or css class selector
+        backdrop =  /^\./.test(backdropclass) ? backdropclass : `.${backdropclass}`
+        this.backdrop = $(backdrop)
+      }
     }
 
-    dataAccess = opts.accessAttr
+    const dataAccess = opts.accessAttr
 
     /**
      * Initialization element e.g <button ...</button>
      */
-    element = $(_elem)
+    const element = $(_elem)
     destinationId = getData(element, dataAccess)
 
     // check if the data-* attribute value is a valid css selector
     // if not prepend a '#' to it as id selector is default
-    let isCSS_Selector = /^(?:\#|\.|\u005b[^\u005c]\u005c)/.test(destinationId),
-    isClass = /^\./.test(destinationId)
-    destinationId = isCSS_Selector ? destinationId : `#${destinationId}`
+    const isCSSSelector = /^(?:#|\.|\u005b[^\u005c]\u005c)/.test(destinationId)
+    const isClass = /^\./.test(destinationId)
+    destinationId = isCSSSelector ? destinationId : `#${destinationId}`
 
     destination = $(destinationId)
 
     // we want a class too so in case we've got an id selector
     // find the classname or assign a unique class
-    let default_class = `${DEF_CLASSNAME}-${unique(2<<7)}`
-    let classname = isClass ? destinationId : hasAttribute(destination, _CLASS) ? getAttribute(destination, _CLASS) : (setAttribute(destination, _CLASS, default_class), default_class)
-    let classlist = classname.split(/\s+/)
-    classname = "." + ((classlist.length >= 2) ? classlist[0] + "." + classlist[1] : classname)
+    const defaultClass = `${DEF_CLASSNAME}-${unique(2 << 7)}`
+    // eslint-disable-next-line no-nested-ternary
+    let classname = isClass ? destinationId : hasAttribute(destination, _CLASS)
+      ? getAttribute(destination, _CLASS) : (setAttribute(destination, _CLASS, defaultClass), defaultClass)
+    const classlist = classname.split(/\s+/)
+    // eslint-disable-next-line prefer-template
+    classname = '.' + (classlist.length >= 2 ? classlist[0] + '.' + classlist[1] : classname)
     destination = isClass ? destination : $(classname)
 
     // These attributes are used for the RWD(Responsive Web Design)
@@ -137,7 +149,7 @@ class NavCard {
     HASH_NAV_MAX_WIDTH = /px$/.test(HASH_NAV_MAX_WIDTH) ? HASH_NAV_MAX_WIDTH : `${HASH_NAV_MAX_WIDTH}px`
     NAV_DRAW_MAX_WIDTH = /px$/.test(NAV_DRAW_MAX_WIDTH) ? NAV_DRAW_MAX_WIDTH : `${NAV_DRAW_MAX_WIDTH}px`
 
-    let defaultOptions = {
+    const defaultOptions = {
       ELEMENT: destination,
       INIT_ELEM: element,
       BACKDROP: new Backdrop(this.backdrop),
@@ -146,7 +158,7 @@ class NavCard {
       DIRECTION: ['top', 'left', 'bottom', 'right'][opts.direction],
       unit: options.unit
     }
-    let drawerOptions = {
+    const drawerOptions = {
       ...defaultOptions,
       MAX_WIDTH: NAV_DRAW_MAX_WIDTH,
       ...EVENTS,
@@ -154,7 +166,7 @@ class NavCard {
       maxStartArea: opts.maxStartArea,
       threshold: opts.threshold
     }
-    let hashOptions = {
+    const hashOptions = {
       ...defaultOptions,
       MAX_WIDTH: HASH_NAV_MAX_WIDTH
     }
@@ -162,7 +174,6 @@ class NavCard {
     this._drawerAPI(drawerOptions).activate()
     this._hashAPI(hashOptions).activate()
     this._defaultAPI(defaultOptions).activate()
-
   }
 
   _drawerAPI(options) {
@@ -177,7 +188,7 @@ class NavCard {
     this.HashState = new HashState(options)
     return {
       activate: () => this.HashState.activate(),
-      deactivate: () => this.HashState.deactivate(),
+      deactivate: () => this.HashState.deactivate()
     }
   }
 
@@ -185,24 +196,27 @@ class NavCard {
     this.NavService = new NavService(options)
     return {
       activate: () => this.NavService.activate(),
-      deactivate: () => this.NavService.deactivate(),
+      deactivate: () => this.NavService.deactivate()
     }
   }
 
   terminate(state) {
     // this._*API(null).deactivate()
-    switch(state) {
+    switch (state) {
       case NavCard.API.DEFAULT:
-        if (this.NavService instanceof NavService)
+        if (this.NavService instanceof NavService) {
           this.NavService.deactivate()
+        }
         break
       case NavCard.API.DRAWER:
-        if (this.Drawer instanceof Drawer)
+        if (this.Drawer instanceof NavDrawer) {
           this.Drawer.deactivate()
+        }
         break
       case NavCard.API.HASH:
-        if (this.HashState instanceof HashState)
+        if (this.HashState instanceof HashState) {
           this.HashState.deactivate()
+        }
         break
       default:
         this._drawerAPI(null).deactivate()
