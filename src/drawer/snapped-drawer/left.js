@@ -16,7 +16,7 @@ const OPEN = 'open'
 const CLOSE = 'close'
 const UNIT = 'px'
 const MAX_START_AREA = 25
-const THRESHOLD_VALUE = 0.666
+const THRESHOLD_VALUE = 0.667
 const FALSE_TOUCH_START_POINT = 2
 
 export default class Left {
@@ -28,14 +28,18 @@ export default class Left {
   constructor(options) {
     this.options = options
     /**
+     * Drawer Element
      * @type {HTMLElement}
      */
     this.element = options.ELEMENT
     /**
      * Size of device window
-     * @type {number}
+     *
+     * unused: required in `Right` and `Bottom`
+     * @type {Function}
      */
-    this.winSize = this.options.sizeOfWindow || window.screen.availWidth
+    this._winSize = this.options.sizeOfWindow || Left._windowSize
+    this.winSize = this._winSize()
     /**
      * @type {number}
      */
@@ -87,7 +91,7 @@ export default class Left {
       end: null
     }
 
-    this.context = null
+    this._context = this
   }
 
   /**
@@ -123,7 +127,7 @@ export default class Left {
         [DIMENSION]: dimension,
         [DISPLACEMENT]: displacement
       }
-      fn.call(this.context || this, response, new Rectangle(this.startX, this.startY, -1, -1))
+      fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1))
     }
   }
 
@@ -159,7 +163,8 @@ export default class Left {
     /**
      * Dimension for opening. When the drawer is being opened,
      * the `width` is the max dimension, and the `start` can
-     * only be less than the `width` (from a range of `0` to `this.maxArea` e.g `0` - `25`), so the current
+     * only be less than the `width` (from a range of `0` to
+     * `this.maxArea` e.g `0` - `25`), so the current
      * reading from `resume` is subtracted from the `width` to
      * get the accurate position to update the drawer with.
      */
@@ -185,7 +190,7 @@ export default class Left {
 
     if (!this.scrollControlSet) {
       this.scrollControl = isBoundX
-      this.scrollControlset = !this.scrollControlSet
+      this.scrollControlSet = !this.scrollControlSet
     }
 
     // OPEN LOGIC
@@ -196,7 +201,7 @@ export default class Left {
         open: true,
         close: false
       }
-      fn.call(this.context || this, response, rect)
+      fn.call(this._context, response, rect)
     }
 
     // CLOSE LOGIC
@@ -207,7 +212,7 @@ export default class Left {
         close: true,
         open: false
       }
-      fn.call(this.context || this, response, rect)
+      fn.call(this._context, response, rect)
     }
   }
 
@@ -290,7 +295,7 @@ export default class Left {
     // CLOSE LOGIC
     if (nextAction === CLOSE && rect.displacementX < ZERO && this.resumeX <= this.width) {
       action = CLOSE
-      if (offsetSide > this.width * threshold) {
+      if (offsetSide >= this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
         thresholdState.stateObj = getResponse(thresholdState.state[0], false)
       } else {
@@ -302,7 +307,7 @@ export default class Left {
   }
 
   setContext(ctx) {
-    this.context = ctx
+    this._context = ctx
     return this
   }
 
@@ -310,10 +315,7 @@ export default class Left {
     return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt)
   }
 
-  // no need for `window.onorientationchange`
-  _loopWinSizeChangeEvent() {
-    window.setInterval(() => {
-      this.winSize = window.screen.availWidth
-    }, 1e3) // eslint-disable-line no-magic-numbers
+  static _windowSize() {
+    return window.screen.availWidth
   }
 }
