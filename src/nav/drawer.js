@@ -1,5 +1,8 @@
+import {
+  DIRECTIONS,
+  NAV_BOX_SHADOW
+} from './../util'
 import Drawer from './../drawer/'
-import { NAV_BOX_SHADOW } from './../util'
 
 const ZERO = 0
 const KILO = 1e3
@@ -16,7 +19,6 @@ const START = 'start'
 const MOVE = 'move'
 const THRESHOLD = 'threshold'
 const BELOW_THRESHOLD = `below${THRESHOLD}`
-const DIRECTIONS = ['top', 'left', 'bottom', 'right']
 
 class NavDrawer {
   /**
@@ -46,7 +48,7 @@ class NavDrawer {
 
     this.directionString = DIRECTIONS[this.direction]
 
-    let o = {
+    const o = {
       ...options,
       SIZE: this.elementSize,
       TARGET: document
@@ -80,12 +82,11 @@ class NavDrawer {
     const axis = this.direction
     if (axis === Drawer.UP || axis === Drawer.DOWN) {
       return this.element.offsetHeight
-    } else {
-      return this.element.offsetWidth
     }
+    return this.element.offsetWidth
   }
 
-  _startHandler(response, rectangle) {
+  _startHandler(response) {
     this.element.style[this.directionString] = response.displacement
     this.element.style.boxShadow = NAV_BOX_SHADOW
     this.element.style[EFFECT] = this.transition
@@ -93,9 +94,15 @@ class NavDrawer {
   }
 
   _moveHandler(response, rectangle) {
-    const curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2
+    let curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2
     this.element.style[this.directionString] = response.dimension
     this.element.style[EFFECT] = this.transition
+    if (this.direction === Drawer.RIGHT) {
+      const WIN_SIZE = window.screen.availWidth
+      curPos = WIN_SIZE - curPos
+      this._backdrop.setOpacity(curPos / this.elementSize)
+      return
+    }
     this._backdrop.setOpacity(curPos / this.elementSize)
   }
 
@@ -117,35 +124,36 @@ class NavDrawer {
     const MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD
     const MPD = MIN_POSITIVE_DISPLACEMENT
     const MND = MIN_NEGATIVE_DISPLACEMENT
-    const displacement = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rect.displacementY : rect.displacementX
+    const displacement = this.direction === Drawer.UP || this.direction === Drawer.DOWN
+      ? rect.displacementY : rect.displacementX
     const options = {
       stateObj
     }
-    const LOGIC = this.direction === Drawer.LEFT ? (displacement > ZERO && displacement >= MPD && rect.greaterWidth) : (displacement < ZERO && displacement <= MND && rect.greaterWidth)
+    const LOGIC = this.direction === Drawer.LEFT
+      ? displacement > ZERO && displacement >= MPD && rect.greaterWidth
+      : displacement < ZERO && displacement <= MND && rect.greaterWidth
 
     if (overallEventTime / KILO < MTTOB) {
-      console.log(overallEventTime)
       // DIRECTION: Drawer.UP | Drawer.LEFT
       if (LOGIC) {
-        console.log(true)
         this.__overrideBelowThresh(!isClosed, options)
       } else {
         if (isClosed) {
           // close it back didn't hit thresh. and can't override
           this._hide(options)
-        } else {
-          // open it back didn't hit thresh. and can't override because not enough displacement
-          this._show(options)
+          return
         }
+        // open it back didn't hit thresh. and can't override because not enough displacement
+        this._show(options)
       }
     } else {
       if (isClosed) {
         // close it back didn't hit thresh. and can't override because not enough velocity or displacement
         this._hide(options)
-      } else {
-        // open it back didn't hit thresh. and can't override because not enough velocity or displacement
-        this._show(options)
+        return
       }
+      // open it back didn't hit thresh. and can't override because not enough velocity or displacement
+      this._show(options)
     }
   }
 
