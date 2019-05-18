@@ -21,12 +21,13 @@ const FALSE_TOUCH_START_POINT = 2
 
 export default class Left {
   /**
-   *
    * @param {{}} options
    * an object containing all required properties
+   * @param {Bound} bound a boundary object
    */
-  constructor(options) {
+  constructor(options, bound) {
     this.options = options
+    this.bound = bound
     /**
      * Drawer Element
      * @type {HTMLElement}
@@ -48,8 +49,10 @@ export default class Left {
     /**
      * @type {number}
      * A maximum area where the draw-start is sensitive
+     * Use set boundary (`bound`) if there's an initial
+     * offset
      */
-    this.maxArea = this.options.maxStartArea || MAX_START_AREA
+    this.maxArea = this.bound.lower || this.options.maxStartArea || MAX_START_AREA
 
     /**
      * A threshold which the `touchmove` signal must attain
@@ -117,9 +120,10 @@ export default class Left {
         /[^\d]*$/, ''
       )
     )
+    const bound = this.bound
     this.positionOnStart = currentPosition
-    const dimension = `-${this.width - start}${this.unit}`
-    const displacement = `-${this.width - FALSE_TOUCH_START_POINT}${this.unit}`
+    const dimension = bound.lower ? `-${bound.upper - bound.lower}${this.unit}` : `-${bound.upper - start}${this.unit}`
+    const displacement = `-${bound.upper - FALSE_TOUCH_START_POINT}${this.unit}`
 
     if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
       const response = {
@@ -141,6 +145,7 @@ export default class Left {
    * @returns {void}
    */
   move(e, fn) {
+    /* eslint complexity: ["error", 25] */
     const resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX
     this.resumeX = resume
     this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
@@ -150,10 +155,10 @@ export default class Left {
         /[^\d]*$/, ''
       )
     )
+    const bound = this.bound
     const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
-
     const start = this.startX
-    const width = this.width
+    const width = bound.upper || this.width
     /**
      * When the touch doesn't start from the max-width
      * of the element ignore `start` and use `width`
@@ -194,7 +199,7 @@ export default class Left {
     }
 
     // OPEN LOGIC
-    if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > ZERO) {
+    if (start >= ZERO && (start <= this.maxArea || start <= width + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -205,7 +210,7 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (resume <= this.width && currentPosition <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
+    if (resume <= width && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
@@ -244,14 +249,15 @@ export default class Left {
         /[^\d]*$/, ''
       )
     )
-    const nonZero = `-${this.width}px`
+    const bound = this.bound
+    const nonZero = `${bound.slack}${this.unit}`
     const zero = `${ZERO}`
+    const width = bound.upper || this.width
     const offsetSide = Math.abs(signedOffsetSide)
     let action = OPEN
     // release the control for another session
     this.scrollControl = this.scrollControlSet = false // eslint-disable-line no-multi-assign
 
-    const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
     const response = {
       [EVENT_OBJ]: e,
       position: signedOffsetSide,
@@ -279,7 +285,7 @@ export default class Left {
     }
 
     // OPEN LOGIC
-    if (nextAction === OPEN && start <= this.maxArea) {
+    if (rect.displacementX > ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
       if (offsetSide <= this.width * threshold) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
@@ -291,9 +297,8 @@ export default class Left {
       return
     }
 
-
     // CLOSE LOGIC
-    if (nextAction === CLOSE && rect.displacementX < ZERO && this.resumeX <= this.width) {
+    if (rect.displacementX < ZERO && this.resumeX <= this.width) {
       action = CLOSE
       if (offsetSide >= this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -304,6 +309,12 @@ export default class Left {
       }
       fn.call(this, action)
     }
+    this.startX = -1
+    this.startY = -1
+    this.resumeX = -1
+    this.resumeY = -1
+    this.endX = -1
+    this.endY = -1
   }
 
   setContext(ctx) {

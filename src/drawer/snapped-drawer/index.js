@@ -11,10 +11,10 @@ const END = 'end'
 
 export default class SnappedDrawer {
   /**
-   *
    * @param {{}} options an object of configuration options
+   * @param {Bound} bound a boundary object
    */
-  constructor(options) {
+  constructor(options, bound) {
     this._options = options
     /**
      * @type {HTMLElement}
@@ -29,9 +29,9 @@ export default class SnappedDrawer {
      * @type {{}}
      */
     this._callbacks = null
-    this._context = null
+    this._context = this
 
-    this._setCalibration(this._direction)
+    this._setCalibration(this._direction, bound)
   }
 
   // enum
@@ -91,10 +91,10 @@ export default class SnappedDrawer {
    * @returns {void}
    */
   deactivate() {
-    for (let i = 0; i < this.events; i++) {
+    for (let i = 0; i < this.events.length; i++) {
       this._target.removeEventListener(this.events[i], this._handlers[i])
     }
-    this._register()
+    this._register(null)
   }
 
   /**
@@ -152,6 +152,10 @@ export default class SnappedDrawer {
     return this
   }
 
+  toString() {
+    return '[object SnappedDrawer]'
+  }
+
   _processThresholdState(state) {
     if (Object.keys(state).length < 1) {
       return
@@ -159,22 +163,22 @@ export default class SnappedDrawer {
     const thState = state.state[0]
     const vector = state.stateObj.rect
     delete state.stateObj.rect
-    this._callbacks[thState].call(this._context || this, state.state, state.stateObj, vector)
+    this._callbacks[thState].call(this._context, state.state, state.stateObj, vector)
   }
 
-  _setCalibration(point) {
+  _setCalibration(point, bound) {
     switch (point) {
       case SnappedDrawer.UP:
-        this._callibration = new Top(this._options)
+        this._callibration = new Top(this._options, bound)
         break
       case SnappedDrawer.LEFT:
-        this._callibration = new Left(this._options)
+        this._callibration = new Left(this._options, bound)
         break
       case SnappedDrawer.DOWN:
-        this._callibration = new Bottom(this._options)
+        this._callibration = new Bottom(this._options, bound)
         break
       case SnappedDrawer.RIGHT:
-        this._callibration = new Right(this._options)
+        this._callibration = new Right(this._options, bound)
         break
       default:
         throw RangeError('Direction out of range')
@@ -196,7 +200,7 @@ export default class SnappedDrawer {
 
   // private
   _register(...handlers) {
-    this._handlers = [...handlers]
+    this._handlers = handlers
   }
 }
 

@@ -21,12 +21,13 @@ const FALSE_TOUCH_START_POINT = 2
 
 export default class Right {
   /**
-   *
-   * @param {*} options
+   * @param {{}} options
    * an object containing all required properties
+   * @param {Bound} bound a boundary object
    */
-  constructor(options) {
+  constructor(options, bound) {
     this.options = options
+    this.bound = bound
     /**
      * Drawer Element
      * @type {HTMLElement}
@@ -34,8 +35,6 @@ export default class Right {
     this.element = options.ELEMENT
     /**
      * Size of device window
-     *
-     * unused: required in `Right` and `Bottom`
      * @type {Function}
      */
     this._winSize = this.options.sizeOfWindow || Right._windowSize
@@ -52,7 +51,7 @@ export default class Right {
      * @type {number}
      * A minimum area where the draw-start is sensitive
      */
-    this.minArea = this.winSize - (this.options.maxStartArea || MAX_START_AREA)
+    this.minArea = this.winSize - (this.bound.lower || this.options.maxStartArea || MAX_START_AREA)
 
     /**
      * A threshold which the `touchmove` signal must attain
@@ -107,14 +106,14 @@ export default class Right {
    * @returns {void}
    */
   start(e, fn) {
-    this._loopWinSizeChangeEvent()
-    const WIN_WIDTH = this.winSize
     this.timing.start = new Date()
+    this._updateOrientation()
+    const WIN_WIDTH = this.winSize
     const start = e.changedTouches[0].pageX || e.changedTouches[0].clientX
     this.startX = start
     this.startY =  e.changedTouches[0].pageY || e.changedTouches[0].clientY
     /**
-     * The `Drawer`'s `Left` class uses the `CSS property`, `left`
+     * The `Drawer`'s `Right` class uses the `CSS property`, `right`
      * for updating and defining position of the drawn element
      */
     const currentPosition = parseFloat(
@@ -122,9 +121,10 @@ export default class Right {
         /[^\d]*$/, ''
       )
     )
+    const bound = this.bound
     this.positionOnStart = currentPosition
-    const dimension = `-${this.width - (WIN_WIDTH - start)}${this.unit}`
-    const displacement = `-${this.width - (WIN_WIDTH - FALSE_TOUCH_START_POINT)}${this.unit}`
+    const dimension = bound.lower ? `-${bound.upper - (WIN_WIDTH - bound.lower)}${this.unit}` : `-${bound.upper - (WIN_WIDTH - start)}${this.unit}`
+    const displacement = `-${bound.upper - (WIN_WIDTH - FALSE_TOUCH_START_POINT)}${this.unit}`
 
     if (start <= WIN_WIDTH && start >= this.minArea && currentPosition !== ZERO) {
       const response = {
@@ -146,8 +146,9 @@ export default class Right {
    * @returns {void}
    */
   move(e, fn) {
+    /* eslint complexity: ["error", 25] */
     const WIN_WIDTH = this.winSize
-    const FALSE_WIDTH = WIN_WIDTH - this.width
+    const FALSE_WIDTH = WIN_WIDTH - this.bound.upper
     const resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX
     this.resumeX = resume
     this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
@@ -157,10 +158,11 @@ export default class Right {
         /[^\d]*$/, ''
       )
     )
+    const bound = this.bound
     const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
 
     const start = this.startX
-    const width = this.width
+    const width = bound.upper || this.width
     /**
      * When the touch doesn't start from the max-width
      * of the element ignore `start` and use `width`
@@ -176,11 +178,11 @@ export default class Right {
      * get the accurate position to update the drawer with.
      *
      *
-     * **WHY IT IS LIKE THIS `width - (this.winSize - resume)`**
+     * **WHY IT IS LIKE THIS `width - (WIN_WIDTH - resume)`**
      *
-     * `this.winSize - resume` converts it from a vector to a scalar.
+     * `WIN_WIDTH - resume` converts it from a vector to a scalar.
      * Keeping it as a vector makes the dimension inaccurate
-     * as the `right` property of the `HTMLElement.style` is the one being updated and not the left,
+     * as the `right` property of the `HTMLElement.style` is the one being updated and not the `left`,
      * so the css `right` property is an enough respect for its direction.
      *
      * *__If it should be respected then:__*,
@@ -223,7 +225,7 @@ export default class Right {
     }
 
     // OPEN LOGIC
-    if (start <= WIN_WIDTH && start >= this.minArea && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX < ZERO) {
+    if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -234,7 +236,7 @@ export default class Right {
     }
 
     // CLOSE LOGIC
-    if (resume >= FALSE_WIDTH && currentPosition <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX > ZERO) {
+    if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX > ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
@@ -259,7 +261,7 @@ export default class Right {
   end(e, fn, thresholdState) {
     this.timing.end = new Date()
     const WIN_WIDTH = this.winSize
-    const FALSE_WIDTH = WIN_WIDTH - this.width
+    const FALSE_WIDTH = WIN_WIDTH - this.bound.upper
     const end = e.changedTouches[0].pageX || e.changedTouches[0].clientX
     this.endX = end
     this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
@@ -274,14 +276,14 @@ export default class Right {
         /[^\d]*$/, ''
       )
     )
-    const nonZero = `-${this.width}px`
+    const bound = this.bound
+    const nonZero = `${bound.slack}${this.unit}`
     const zero = `${ZERO}`
     const offsetSide = Math.abs(signedOffsetSide)
     let action = OPEN
     // release the control for another session
     this.scrollControl = this.scrollControlSet = false // eslint-disable-line no-multi-assign
 
-    const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
     const response = {
       [EVENT_OBJ]: e,
       position: signedOffsetSide,
@@ -309,7 +311,7 @@ export default class Right {
     }
 
     // OPEN LOGIC
-    if (nextAction === OPEN && start >= this.minArea) {
+    if (rect.displacementX < ZERO && (start >= this.minArea || start >= FALSE_WIDTH + signedOffsetSide)) {
       if (offsetSide <= this.width * threshold) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
@@ -322,7 +324,7 @@ export default class Right {
     }
 
     // CLOSE LOGIC
-    if (nextAction === CLOSE && rect.displacementX > ZERO && FALSE_WIDTH - this.resumeX <= this.width) {
+    if (rect.displacementX > ZERO && this.resumeX >= FALSE_WIDTH) {
       action = CLOSE
       if (offsetSide >= this.width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -349,14 +351,8 @@ export default class Right {
   }
 
   // no need for `window.onorientationchange`
-  _loopWinSizeChangeEvent(getHandler) {
-    const fn = () => {
-      this.winSize = typeof this.winSize === 'function' ? this._winSize() : Right._windowSize()
-      this.minArea = this.winSize - (this.options.maxStartArea || MAX_START_AREA)
-    }
-    if (getHandler) {
-      return fn
-    }
-    window.setInterval(fn, 1e3)
+  _updateOrientation() {
+    this.winSize = typeof this._winSize === 'function' ? this._winSize() : Right._windowSize()
+    this.minArea = this.winSize - (this.bound.lower || this.options.maxStartArea || MAX_START_AREA)
   }
 }
