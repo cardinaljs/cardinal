@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-04-24T13:14:21.606Z
+  * Build Date: 2019-05-18T16:00:25.142Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -74,10 +74,11 @@
     subClass.__proto__ = superClass;
   }
 
-  var MAX_THRESHOLD = 1;
-  var MIN_ILLEGAL_THRESHOLD = 0;
   var ZERO = 0;
   function validateThreshold(tsh) {
+    var MAX_THRESHOLD = 1;
+    var MIN_ILLEGAL_THRESHOLD = 0;
+
     if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
       tsh = MAX_THRESHOLD - tsh;
       return tsh;
@@ -89,81 +90,10 @@
     return MAX_THRESHOLD;
   }
 
-  var Bottom =
+  var VectorRectangle =
   /*#__PURE__*/
   function () {
-    /**
-     *
-     * @param {*} options
-     * an object containing all required properties
-     */
-    function Bottom(options) {
-      this.options = options;
-      this.element = options.ELEMENT;
-      /**
-       * Size of device window
-       */
-
-      this.winSize = this.options.sizeOfWindow || window.screen.availHeight;
-      this.height = this.element.offsetHeight;
-      this.unit = this.options.unit;
-      /**
-       * @type number
-       * A maximum area where the draw-start is sensitive
-       */
-
-      this.maxArea = this.winSize - this.options.maxStartArea;
-      this.context = null;
-    }
-
-    var _proto = Bottom.prototype;
-
-    _proto.start = function start(e) {
-      var start = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var startX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
-      /**
-       * The `Drawer`'s `Top` class uses the `CSS property` `top`
-       * for updating and defining position of the drawn element
-       */
-
-      var currentPosition = parseFloat(this.element.style.bottom.replace(/[^\d]*$/, ''));
-      var dimension = "-" + (this.height - start) + this.unit;
-      var displacement = "-" + (this.height - Final.START) + this.unit;
-
-      if (start >= ZERO && start <= this.maxArea && currentPosition !== Final.ZERO) {
-        this.element.style.bottom = displacement || dimension;
-      }
-    };
-
-    _proto.move = function move() {};
-
-    _proto.end = function end() {};
-
-    _proto.setContext = function setContext(ctx) {
-      this.context = ctx;
-      return this;
-    };
-
-    Bottom._getStyle = function _getStyle(elt, pseudoElt) {
-      return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
-    } // no need for `window.onorientationchange`
-    ;
-
-    _proto._loopWinSizeChangeEvent = function _loopWinSizeChangeEvent() {
-      var _this = this;
-
-      window.setInterval(function () {
-        _this.winSize = window.screen.availWidth;
-      }, 1e3);
-    };
-
-    return Bottom;
-  }();
-
-  var Vector =
-  /*#__PURE__*/
-  function () {
-    function Vector(x1, y1, x2, y2) {
+    function VectorRectangle(x1, y1, x2, y2) {
       this.coordsX = {
         x1: x1,
         x2: x2
@@ -174,7 +104,7 @@
       };
     }
 
-    _createClass(Vector, [{
+    _createClass(VectorRectangle, [{
       key: "displacementX",
       get: function get() {
         return this.coordsX.x2 - this.coordsX.x1;
@@ -184,18 +114,30 @@
       get: function get() {
         return this.coordsY.y2 - this.coordsY.y1;
       }
+    }, {
+      key: "diagonalLength",
+      get: function get() {
+        if (!this.displacementY) {
+          return this.displacementX;
+        } else if (!this.displacementX) {
+          return this.displacementY;
+        }
+
+        return Math.sqrt(Math.pow(this.displacementY, 2) + Math.pow(this.displacementX, 2));
+      }
     }]);
 
-    return Vector;
+    return VectorRectangle;
   }();
 
-  var Rectangle$1 =
+  var Rectangle =
   /*#__PURE__*/
-  function (_Vector) {
-    _inheritsLoose(Rectangle, _Vector);
+  function (_VectorRectangle) {
+    _inheritsLoose(Rectangle, _VectorRectangle);
 
+    // eslint-disable-next-line no-useless-constructor
     function Rectangle(x1, y1, x2, y2) {
-      return _Vector.call(this, x1, y1, x2, y2) || this;
+      return _VectorRectangle.call(this, x1, y1, x2, y2) || this;
     } // getter
 
 
@@ -222,9 +164,9 @@
     }]);
 
     return Rectangle;
-  }(Vector);
+  }(VectorRectangle);
 
-  var DIRECTION = 'left';
+  var DIRECTION = 'bottom';
   var DIMENSION = 'dimension';
   var DISPLACEMENT = 'displacement';
   var EVENT_OBJ = 'event';
@@ -234,42 +176,49 @@
   var CLOSE = 'close';
   var UNIT = 'px';
   var MAX_START_AREA = 25;
-  var THRESHOLD_VALUE = 0.666;
+  var THRESHOLD_VALUE = 0.667;
   var FALSE_TOUCH_START_POINT = 2;
 
-  var Left =
+  var Bottom =
   /*#__PURE__*/
   function () {
     /**
-     *
      * @param {{}} options
      * an object containing all required properties
+     * @param {Bound} bound a boundary object
      */
-    function Left(options) {
+    function Bottom(options, bound) {
       this.options = options;
+      this.bound = bound;
       /**
+       * Drawer Element
        * @type {HTMLElement}
        */
 
       this.element = options.ELEMENT;
       /**
        * Size of device window
-       * @type {number}
+       * @type {Function}
        */
 
-      this.winSize = this.options.sizeOfWindow || window.screen.availWidth;
+      this._winSize = this.options.sizeOfWindow || Bottom._windowSize;
       /**
        * @type {number}
        */
 
-      this.width = this.options.SIZE;
+      this.winSize = this._winSize();
+      /**
+       * @type {number}
+       */
+
+      this.height = this.options.SIZE;
       this.unit = this.options.unit || UNIT;
       /**
        * @type {number}
-       * A maximum area where the draw-start is sensitive
+       * A minimum area where the draw-start is sensitive
        */
 
-      this.maxArea = this.options.maxStartArea || MAX_START_AREA;
+      this.minArea = this.winSize - (this.bound.lower || this.options.maxStartArea || MAX_START_AREA);
       /**
        * A threshold which the `touchmove` signal must attain
        * before being qualified to stay shown
@@ -310,7 +259,344 @@
          */
         end: null
       };
-      this.context = null;
+      this._context = this;
+    }
+    /**
+     * The `touchstart` event handler for the `Bottom` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchstart` event.
+     * @param {Function} fn - a callback function called when the `start`
+     * event is triggered
+     * @returns {void}
+     */
+
+
+    var _proto = Bottom.prototype;
+
+    _proto.start = function start(e, fn) {
+      this.timing.start = new Date();
+
+      this._updateOrientation();
+
+      var WIN_HEIGHT = this.winSize;
+      var start = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.startX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.startY = start;
+      /**
+       * The `Drawer`'s `Bottom` class uses the `CSS property`, `bottom`
+       * for updating and defining position of the drawn element
+       */
+
+      var currentPosition = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      this.positionOnStart = currentPosition;
+      var dimension = bound.lower ? "-" + (bound.upper - (WIN_HEIGHT - bound.lower)) + this.unit : "-" + (bound.upper - (WIN_HEIGHT - start)) + this.unit;
+      var displacement = "-" + (bound.upper - (WIN_HEIGHT - FALSE_TOUCH_START_POINT)) + this.unit;
+
+      if (start <= WIN_HEIGHT && start >= this.minArea && currentPosition !== ZERO) {
+        var _response;
+
+        var response = (_response = {}, _response[EVENT_OBJ] = e, _response[DIMENSION] = dimension, _response[DISPLACEMENT] = displacement, _response);
+        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+      }
+    }
+    /**
+     * The `touchmove` event handler for the `Bottom` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchmove` event.
+     * @param {Function} fn - a callback function called when the `move`
+     * event is triggered
+     * @returns {void}
+     */
+    ;
+
+    _proto.move = function move(e, fn) {
+      /* eslint complexity: ["error", 25] */
+      var WIN_HEIGHT = this.winSize;
+      var FALSE_HEIGHT = WIN_HEIGHT - this.bound.upper;
+      var resume = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.resumeX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.resumeY = resume;
+      var currentPosition = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN;
+      var start = this.startY;
+      var height = bound.upper || this.height;
+      /**
+       * When the touch doesn't start from the max-height
+       * of the element ignore `start` and use `height`
+       * as starting point.
+       */
+
+      var virtualStart = start < FALSE_HEIGHT ? FALSE_HEIGHT : start;
+      /**
+       * Dimension for opening. When the drawer is being opened,
+       * the `height` is the max dimension, and the `start` can
+       * only be less than the `height` (from a range of `0` to `this.maxArea` e.g `0` - `25`), so the current
+       * reading from `resume` is subtracted from the `height` to
+       * get the accurate position to update the drawer with.
+       *
+       *
+       * **WHY IT IS LIKE THIS `height - (WIN_HEIGHT - resume)`**
+       *
+       * `WIN_HEIGHT - resume` converts it from a vector to a scalar.
+       * Keeping it as a vector makes the dimension inaccurate
+       * as the `bottom` property of the `HTMLElement.style` is the one being updated and not the `top`,
+       * so the css `bottom` property is an enough respect for its direction.
+       *
+       * *__If it should be respected then:__*,
+       * 1. The `Bottom Drawer class` would be updating `top css property` and not `bottom`, i.e, initialy an element that uses the `Bottom Drawer` must have a `css file` that defines a `css top property` for the element and not a `bottom` property; As in
+       * ```scss
+       * .menu {
+       *   top: // (window size + height of the element)px
+       * }
+       * ```
+       * 2. Cardinal's `Bottom Drawer class` can always update
+       * as `HTMLElement.style.top = ${height - resume}px`, and
+       * not as it is now.
+       * This way there is no `bottom` property respecting the direction
+       * So the vector attribute of the dimension is preserved.
+       */
+
+      var dimension = "-" + (height - (WIN_HEIGHT - resume)) + this.unit;
+      /**
+       * Dimension for closing. When the drawer is being closed,
+       * the `height` is the max dimension and the `start` could
+       * possibly be more than the `height`
+       * or less than the `height`.
+       * To assure an accurate dimension the `virtualStart`
+       * determines whether to use the `height` as starting point
+       * or the actual `start`. If the actual start is more than
+       * `height`, the height becomes the start point else the `start`
+       */
+
+      var vdimension = "-" + (resume - virtualStart) + this.unit;
+      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var isBoundY = rect.greaterHeight;
+
+      if (!this.scrollControlSet) {
+        this.scrollControl = isBoundY;
+        this.scrollControlSet = !this.scrollControlSet;
+      } // OPEN LOGIC
+
+
+      if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT + currentPosition) && currentPosition !== ZERO && isBoundY && nextAction === OPEN && this.scrollControl && rect.displacementY < ZERO) {
+        var _response2;
+
+        var response = (_response2 = {}, _response2[EVENT_OBJ] = e, _response2[DIMENSION] = dimension, _response2.open = true, _response2.close = false, _response2);
+        fn.call(this._context, response, rect);
+      } // CLOSE LOGIC
+
+
+      if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE && this.scrollControl && rect.displacementY > ZERO) {
+        var _response4;
+
+        var _response3 = (_response4 = {}, _response4[EVENT_OBJ] = e, _response4[DIMENSION] = vdimension, _response4.close = true, _response4.open = false, _response4);
+
+        fn.call(this._context, _response3, rect);
+      }
+    }
+    /**
+     * The `touchend` event handler for the `Bottom` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchend` event.
+     * @param {Function} fn - a callback function called when the `end`
+     * event is triggered
+     * @param {{}} thresholdState - a state object which should be passed
+     * by reference for updating by this method
+     * @returns {void}
+     */
+    ;
+
+    _proto.end = function end(e, fn, thresholdState) {
+      var _response5;
+
+      this.timing.end = new Date();
+      var WIN_HEIGHT = this.winSize;
+      var FALSE_HEIGHT = WIN_HEIGHT - this.bound.upper;
+      var end = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.endY = end;
+      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var start = this.startY;
+      var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
+      var threshold = this.threshold;
+      var signedOffsetSide = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nonZero = "" + bound.slack + this.unit;
+      var zero = "" + ZERO;
+      var offsetSide = Math.abs(signedOffsetSide);
+      var action = OPEN; // release the control for another session
+
+      this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
+
+      var response = (_response5 = {}, _response5[EVENT_OBJ] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+
+      function getResponse(state, trueForOpen) {
+        var opposite = 'oppositeDimension';
+
+        if (state === THRESHOLD && trueForOpen || state === BELOW_THRESHOLD && !trueForOpen) {
+          var _extends2;
+
+          return _extends((_extends2 = {}, _extends2[DIMENSION] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+        } else if (state === THRESHOLD && !trueForOpen || state === BELOW_THRESHOLD && trueForOpen) {
+          var _extends3;
+
+          return _extends((_extends3 = {}, _extends3[DIMENSION] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+        }
+
+        return {};
+      } // OPEN LOGIC
+
+
+      if (rect.displacementY < ZERO && (start >= this.minArea || start >= FALSE_HEIGHT + signedOffsetSide)) {
+        if (offsetSide <= this.height * threshold) {
+          thresholdState.state = [THRESHOLD, CLOSE];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD, CLOSE];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
+        }
+
+        fn.call(this, action);
+        return;
+      } // CLOSE LOGIC
+
+
+      if (rect.displacementY > ZERO && this.resumeY >= FALSE_HEIGHT) {
+        action = CLOSE;
+
+        if (offsetSide >= this.height * threshold) {
+          thresholdState.state = [THRESHOLD, OPEN];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD, OPEN];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
+        }
+
+        fn.call(this, action);
+      }
+    };
+
+    _proto.setContext = function setContext(ctx) {
+      this._context = ctx;
+      return this;
+    };
+
+    Bottom._getStyle = function _getStyle(elt, pseudoElt) {
+      return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
+    };
+
+    Bottom._windowSize = function _windowSize() {
+      return window.screen.availHeight;
+    } // no need for `window.onorientationchange`
+    ;
+
+    _proto._updateOrientation = function _updateOrientation() {
+      this.winSize = typeof this._winSize === 'function' ? this._winSize() : Bottom._windowSize();
+      this.minArea = this.winSize - (this.bound.lower || this.options.maxStartArea || MAX_START_AREA);
+    };
+
+    return Bottom;
+  }();
+
+  var DIRECTION$1 = 'left';
+  var DIMENSION$1 = 'dimension';
+  var DISPLACEMENT$1 = 'displacement';
+  var EVENT_OBJ$1 = 'event';
+  var THRESHOLD$1 = 'threshold';
+  var BELOW_THRESHOLD$1 = 'belowthreshold';
+  var OPEN$1 = 'open';
+  var CLOSE$1 = 'close';
+  var UNIT$1 = 'px';
+  var MAX_START_AREA$1 = 25;
+  var THRESHOLD_VALUE$1 = 0.667;
+  var FALSE_TOUCH_START_POINT$1 = 2;
+
+  var Left =
+  /*#__PURE__*/
+  function () {
+    /**
+     * @param {{}} options
+     * an object containing all required properties
+     * @param {Bound} bound a boundary object
+     */
+    function Left(options, bound) {
+      this.options = options;
+      this.bound = bound;
+      /**
+       * Drawer Element
+       * @type {HTMLElement}
+       */
+
+      this.element = options.ELEMENT;
+      /**
+       * Size of device window
+       *
+       * unused: required in `Right` and `Bottom`
+       * @type {Function}
+       */
+
+      this._winSize = this.options.sizeOfWindow || Left._windowSize;
+      this.winSize = this._winSize();
+      /**
+       * @type {number}
+       */
+
+      this.width = this.options.SIZE;
+      this.unit = this.options.unit || UNIT$1;
+      /**
+       * @type {number}
+       * A maximum area where the draw-start is sensitive
+       * Use set boundary (`bound`) if there's an initial
+       * offset
+       */
+
+      this.maxArea = this.bound.lower || this.options.maxStartArea || MAX_START_AREA$1;
+      /**
+       * A threshold which the `touchmove` signal must attain
+       * before being qualified to stay shown
+       * the threshold should be a value between `0` and `1.0`
+       * @type {number}
+       */
+
+      this.threshold = this.options.threshold || THRESHOLD_VALUE$1;
+      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+
+      this.startX = -1;
+      this.startY = -1; // Touch coordinates (Touch Move)
+
+      this.resumeX = -1;
+      this.resumeY = -1; // Touch coordinates (Touch End) [these may not be important]
+
+      this.endX = -1;
+      this.endY = -1;
+      /**
+       * A control for scroll. This control prevents
+       * a clash between coordinates dancing between
+       * the (&delta;`X`) coords and (&delta;`Y`) coords.
+       * Utilising the `Rectangle` class to get bounds
+       * and isolate territories
+       * @type {boolean}
+       */
+
+      this.scrollControlSet = false;
+      this.scrollControl = null;
+      this.timing = {
+        /**
+         * @type {Date}
+         */
+        start: null,
+
+        /**
+         * @type {Date}
+         */
+        end: null
+      };
+      this._context = this;
     }
     /**
      * The `touchstart` event handler for the `Left` drawer `class`
@@ -335,16 +621,17 @@
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
+      var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
       this.positionOnStart = currentPosition;
-      var dimension = "-" + (this.width - start) + this.unit;
-      var displacement = "-" + (this.width - FALSE_TOUCH_START_POINT) + this.unit;
+      var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - start) + this.unit;
+      var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$1) + this.unit;
 
       if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
         var _response;
 
-        var response = (_response = {}, _response[EVENT_OBJ] = e, _response[DIMENSION] = dimension, _response[DISPLACEMENT] = displacement, _response);
-        fn.call(this.context || this, response, new Rectangle$1(this.startX, this.startY, -1, -1));
+        var response = (_response = {}, _response[EVENT_OBJ$1] = e, _response[DIMENSION$1] = dimension, _response[DISPLACEMENT$1] = displacement, _response);
+        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
       }
     }
     /**
@@ -359,13 +646,15 @@
     ;
 
     _proto.move = function move(e, fn) {
+      /* eslint complexity: ["error", 25] */
       var resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.resumeX = resume;
       this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
-      var nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN;
+      var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nextAction = this.positionOnStart === ZERO ? CLOSE$1 : OPEN$1;
       var start = this.startX;
-      var width = this.width;
+      var width = bound.upper || this.width;
       /**
        * When the touch doesn't start from the max-width
        * of the element ignore `start` and use `width`
@@ -376,7 +665,8 @@
       /**
        * Dimension for opening. When the drawer is being opened,
        * the `width` is the max dimension, and the `start` can
-       * only be less than the `width` (from a range of `0` to `this.maxArea` e.g `0` - `25`), so the current
+       * only be less than the `width` (from a range of `0` to
+       * `this.maxArea` e.g `0` - `25`), so the current
        * reading from `resume` is subtracted from the `width` to
        * get the accurate position to update the drawer with.
        */
@@ -394,29 +684,29 @@
        */
 
       var vdimension = "-" + (virtualStart - resume) + this.unit;
-      var rect = new Rectangle$1(this.startX, this.startY, this.resumeX, this.resumeY);
+      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundX = rect.greaterWidth;
 
       if (!this.scrollControlSet) {
         this.scrollControl = isBoundX;
-        this.scrollControlset = !this.scrollControlSet;
+        this.scrollControlSet = !this.scrollControlSet;
       } // OPEN LOGIC
 
 
-      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX > ZERO) {
+      if (start >= ZERO && (start <= this.maxArea || start <= width + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN$1 && this.scrollControl && rect.displacementX > ZERO) {
         var _response2;
 
-        var response = (_response2 = {}, _response2[EVENT_OBJ] = e, _response2[DIMENSION] = dimension, _response2.open = true, _response2.close = false, _response2);
-        fn.call(this.context || this, response, rect);
+        var response = (_response2 = {}, _response2[EVENT_OBJ$1] = e, _response2[DIMENSION$1] = dimension, _response2.open = true, _response2.close = false, _response2);
+        fn.call(this._context, response, rect);
       } // CLOSE LOGIC
 
 
-      if (resume <= this.width && currentPosition <= this.width && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
+      if (resume <= width && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$1 && this.scrollControl && rect.displacementX < ZERO) {
         var _response4;
 
-        var _response3 = (_response4 = {}, _response4[EVENT_OBJ] = e, _response4[DIMENSION] = vdimension, _response4.close = true, _response4.open = false, _response4);
+        var _response3 = (_response4 = {}, _response4[EVENT_OBJ$1] = e, _response4[DIMENSION$1] = vdimension, _response4.close = true, _response4.open = false, _response4);
 
-        fn.call(this.context || this, _response3, rect);
+        fn.call(this._context, _response3, rect);
       }
     }
     /**
@@ -439,44 +729,45 @@
       var end = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.endX = end;
       this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var rect = new Rectangle$1(this.startX, this.startY, this.endX, this.endY);
+      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startX;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
-      var signedOffsetSide = parseFloat(Left._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
-      var nonZero = "-" + this.width + "px";
+      var signedOffsetSide = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nonZero = "" + bound.slack + this.unit;
       var zero = "" + ZERO;
+      var width = bound.upper || this.width;
       var offsetSide = Math.abs(signedOffsetSide);
-      var action = OPEN; // release the control for another session
+      var action = OPEN$1; // release the control for another session
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
-      var nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN;
-      var response = (_response5 = {}, _response5[EVENT_OBJ] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+      var response = (_response5 = {}, _response5[EVENT_OBJ$1] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
         var opposite = 'oppositeDimension';
 
-        if (state === THRESHOLD && trueForOpen || state === BELOW_THRESHOLD && !trueForOpen) {
+        if (state === THRESHOLD$1 && trueForOpen || state === BELOW_THRESHOLD$1 && !trueForOpen) {
           var _extends2;
 
-          return _extends((_extends2 = {}, _extends2[DIMENSION] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
-        } else if (state === THRESHOLD && !trueForOpen || state === BELOW_THRESHOLD && trueForOpen) {
+          return _extends((_extends2 = {}, _extends2[DIMENSION$1] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+        } else if (state === THRESHOLD$1 && !trueForOpen || state === BELOW_THRESHOLD$1 && trueForOpen) {
           var _extends3;
 
-          return _extends((_extends3 = {}, _extends3[DIMENSION] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+          return _extends((_extends3 = {}, _extends3[DIMENSION$1] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
         }
 
         return {};
       } // OPEN LOGIC
 
 
-      if (nextAction === OPEN && start <= this.maxArea) {
+      if (rect.displacementX > ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
         if (offsetSide <= this.width * threshold) {
-          thresholdState.state = [THRESHOLD, CLOSE];
+          thresholdState.state = [THRESHOLD$1, CLOSE$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         } else {
-          thresholdState.state = [BELOW_THRESHOLD, CLOSE];
+          thresholdState.state = [BELOW_THRESHOLD$1, CLOSE$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         }
 
@@ -485,146 +776,209 @@
       } // CLOSE LOGIC
 
 
-      if (nextAction === CLOSE && rect.displacementX < ZERO && this.resumeX <= this.width) {
-        action = CLOSE;
+      if (rect.displacementX < ZERO && this.resumeX <= this.width) {
+        action = CLOSE$1;
 
-        if (offsetSide > this.width * threshold) {
-          thresholdState.state = [THRESHOLD, OPEN];
+        if (offsetSide >= this.width * threshold) {
+          thresholdState.state = [THRESHOLD$1, OPEN$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         } else {
-          thresholdState.state = [BELOW_THRESHOLD, OPEN];
+          thresholdState.state = [BELOW_THRESHOLD$1, OPEN$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         }
 
         fn.call(this, action);
       }
+
+      this.startX = -1;
+      this.startY = -1;
+      this.resumeX = -1;
+      this.resumeY = -1;
+      this.endX = -1;
+      this.endY = -1;
     };
 
     _proto.setContext = function setContext(ctx) {
-      this.context = ctx;
+      this._context = ctx;
       return this;
     };
 
     Left._getStyle = function _getStyle(elt, pseudoElt) {
       return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
-    } // no need for `window.onorientationchange`
-    ;
+    };
 
-    _proto._loopWinSizeChangeEvent = function _loopWinSizeChangeEvent() {
-      var _this = this;
-
-      window.setInterval(function () {
-        _this.winSize = window.screen.availWidth;
-      }, 1e3); // eslint-disable-line no-magic-numbers
+    Left._windowSize = function _windowSize() {
+      return window.screen.availWidth;
     };
 
     return Left;
   }();
 
-  var DIRECTION$1 = 'right';
+  var DIRECTION$2 = 'right';
+  var DIMENSION$2 = 'dimension';
+  var DISPLACEMENT$2 = 'displacement';
+  var EVENT_OBJ$2 = 'event';
+  var THRESHOLD$2 = 'threshold';
+  var BELOW_THRESHOLD$2 = 'belowthreshold';
+  var OPEN$2 = 'open';
+  var CLOSE$2 = 'close';
+  var UNIT$2 = 'px';
+  var MAX_START_AREA$2 = 25;
+  var THRESHOLD_VALUE$2 = 0.667;
+  var FALSE_TOUCH_START_POINT$2 = 2;
 
   var Right =
   /*#__PURE__*/
   function () {
     /**
-     *
-     * @param {*} options
+     * @param {{}} options
      * an object containing all required properties
+     * @param {Bound} bound a boundary object
      */
-    function Right(options) {
-      this.options = options; // the target element, not listening to,
-      // but reacting to event
+    function Right(options, bound) {
+      this.options = options;
+      this.bound = bound;
+      /**
+       * Drawer Element
+       * @type {HTMLElement}
+       */
 
       this.element = options.ELEMENT;
       /**
-       * @type number
-       * Size of device window in pixels
+       * Size of device window
+       * @type {Function}
        */
 
-      this.winSize = this.options.sizeOfWindow || window.screen.availWidth;
+      this._winSize = this.options.sizeOfWindow || Right._windowSize;
       /**
-       * @type number
-       * A numerical representation of the
-       * target element's width
+       * @type {number}
        */
 
-      this.width = this.element.offsetWidth;
-      this.unit = this.options.UNIT;
+      this.winSize = this._winSize();
       /**
-       * @type number
-       * A maximum area where the draw-start is sensitive
+       * @type {number}
        */
 
-      this.maxArea = this.winSize - this.options.maxStartArea;
+      this.width = this.options.SIZE;
+      this.unit = this.options.unit || UNIT$2;
+      /**
+       * @type {number}
+       * A minimum area where the draw-start is sensitive
+       */
+
+      this.minArea = this.winSize - (this.bound.lower || this.options.maxStartArea || MAX_START_AREA$2);
       /**
        * A threshold which the `touchmove` signal must attain
        * before being qualified to stay shown
-       * the threshold should be a value between `1.0` and `0`
-       * @type number
+       * the threshold should be a value between `0` and `1.0`
+       * @type {number}
        */
 
-      this.threshold = this.options.threshold; // Touch coordinates (Touch Start)
+      this.threshold = this.options.threshold || THRESHOLD_VALUE$2;
+      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
 
       this.resumeX = -1;
-      this.resumeY = -1;
+      this.resumeY = -1; // Touch coordinates (Touch End) [these may not be important]
+
+      this.endX = -1;
+      this.endY = -1;
       /**
        * A control for scroll. This control prevents
        * a clash between coordinates dancing between
        * the (&delta;`X`) coords and (&delta;`Y`) coords.
        * Utilising the `Rectangle` class to get bounds
        * and isolate territories
-       * @type boolean
+       * @type {boolean}
        */
 
       this.scrollControlSet = false;
       this.scrollControl = null;
-      this.context = null;
+      this.timing = {
+        /**
+         * @type {Date}
+         */
+        start: null,
+
+        /**
+         * @type {Date}
+         */
+        end: null
+      };
+      this._context = this;
     }
+    /**
+     * The `touchstart` event handler for the `Left` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchstart` event.
+     * @param {Function} fn - a callback function called when the `start`
+     * event is triggered
+     * @returns {void}
+     */
+
 
     var _proto = Right.prototype;
 
-    _proto.start = function start() {
+    _proto.start = function start(e, fn) {
+      this.timing.start = new Date();
+
+      this._updateOrientation();
+
+      var WIN_WIDTH = this.winSize;
       var start = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.startX = start;
       this.startY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       /**
-       * The `Drawer`'s `Right` class uses the `CSS property` `Right`
+       * The `Drawer`'s `Right` class uses the `CSS property`, `right`
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(this.element.style.right.replace(/[^\d]*$/, ''));
-      var dimension = "-" + (this.width - (this.winSize - start)) + this.unit;
-      var displacement = "-" + (this.width - START) + this.unit;
+      var currentPosition = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      this.positionOnStart = currentPosition;
+      var dimension = bound.lower ? "-" + (bound.upper - (WIN_WIDTH - bound.lower)) + this.unit : "-" + (bound.upper - (WIN_WIDTH - start)) + this.unit;
+      var displacement = "-" + (bound.upper - (WIN_WIDTH - FALSE_TOUCH_START_POINT$2)) + this.unit;
 
-      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
-        this.element.style.right = displacement || dimension;
+      if (start <= WIN_WIDTH && start >= this.minArea && currentPosition !== ZERO) {
+        var _response;
+
+        var response = (_response = {}, _response[EVENT_OBJ$2] = e, _response[DIMENSION$2] = dimension, _response[DISPLACEMENT$2] = displacement, _response);
+        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
       }
     }
     /**
      * The `touchmove` event handler for the `Right` drawer `class`
-     * @param {*} e an event `object`: An event `object`
+     * @param {TouchEvent} e an event `object`: An event `object`
      * representing an `object` of all `properties` related
-     * to the `touchstart` event.
+     * to the `touchmove` event.
+     * @param {Function} fn - a callback function called when the `move`
+     * event is triggered
+     * @returns {void}
      */
     ;
 
-    _proto.move = function move() {
+    _proto.move = function move(e, fn) {
+      /* eslint complexity: ["error", 25] */
+      var WIN_WIDTH = this.winSize;
+      var FALSE_WIDTH = WIN_WIDTH - this.bound.upper;
       var resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.resumeX = resume;
       this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var currentPosition = parseFloat(this.element.style[DIRECTION$1].replace(/[^\d]*$/, ''));
+      var currentPosition = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nextAction = this.positionOnStart === ZERO ? CLOSE$2 : OPEN$2;
       var start = this.startX;
-      var width = this.width;
+      var width = bound.upper || this.width;
       /**
        * When the touch doesn't start from the max-width
        * of the element ignore `start` and use `width`
        * as starting point.
        */
 
-      var virtualStart = start < this.winSize - width ? this.winSize - width : start;
+      var virtualStart = start < FALSE_WIDTH ? FALSE_WIDTH : start;
       /**
        * Dimension for opening. When the drawer is being opened,
        * the `width` is the max dimension, and the `start` can
@@ -633,14 +987,14 @@
        * get the accurate position to update the drawer with.
        *
        *
-       * **WHY IT IS LIKE THIS `width - (this.winSize - resume)`**
+       * **WHY IT IS LIKE THIS `width - (WIN_WIDTH - resume)`**
        *
-       * `this.winSize - resume` converts it from a vector to a scalar.
+       * `WIN_WIDTH - resume` converts it from a vector to a scalar.
        * Keeping it as a vector makes the dimension inaccurate
-       * as the `right` property of the `HTMLElement.style` is the one being updated and not the left,
+       * as the `right` property of the `HTMLElement.style` is the one being updated and not the `left`,
        * so the css `right` property is an enough respect for its direction.
        *
-       * *__If it should be respected then__*,
+       * *__If it should be respected then:__*,
        * 1. The `Right Drawer class` would be updating `left css property` and not `right`, i.e, initialy an element that uses the `Right Drawer` must have a `css file` that defines a `css left property` for the element and not a `right` property; As in
        * ```scss
        * .menu {
@@ -654,7 +1008,7 @@
        * So the vector attribute of the dimension is preserved.
        */
 
-      var dimension = "-" + (width - (this.winSize - resume)) + this.unit;
+      var dimension = "-" + (width - (WIN_WIDTH - resume)) + this.unit;
       /**
        * Dimension for closing. When the drawer is being closed,
        * the `width` is the max dimension and the `start` could
@@ -668,108 +1022,442 @@
 
       var vdimension = "-" + (resume - virtualStart) + this.unit;
       var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
-      var isBoundX = rect.wGTh(); // eslint-disable-next-line no-unused-expression, no-sequence, no-extra-parens
+      var isBoundX = rect.greaterWidth;
 
-      !this.scrollControlSet && (this.scrollControl = isBoundX), this.scrollControlset = !this.scrollControlSet;
+      if (!this.scrollControlSet) {
+        this.scrollControl = isBoundX;
+        this.scrollControlSet = !this.scrollControlSet;
+      } // OPEN LOGIC
+
+
+      if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN$2 && this.scrollControl && rect.displacementX < ZERO) {
+        var _response2;
+
+        var response = (_response2 = {}, _response2[EVENT_OBJ$2] = e, _response2[DIMENSION$2] = dimension, _response2.open = true, _response2.close = false, _response2);
+        fn.call(this._context, response, rect);
+      } // CLOSE LOGIC
+
+
+      if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$2 && this.scrollControl && rect.displacementX > ZERO) {
+        var _response4;
+
+        var _response3 = (_response4 = {}, _response4[EVENT_OBJ$2] = e, _response4[DIMENSION$2] = vdimension, _response4.close = true, _response4.open = false, _response4);
+
+        fn.call(this._context, _response3, rect);
+      }
+    }
+    /**
+     * The `touchend` event handler for the `Right` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchend` event.
+     * @param {Function} fn - a callback function called when the `end`
+     * event is triggered
+     * @param {{}} thresholdState - a state object which should be passed
+     * by reference for updating by this method
+     * @returns {void}
+     */
+    ;
+
+    _proto.end = function end(e, fn, thresholdState) {
+      var _response5;
+
+      this.timing.end = new Date();
+      var WIN_WIDTH = this.winSize;
+      var FALSE_WIDTH = WIN_WIDTH - this.bound.upper;
+      var end = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.endX = end;
+      this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var start = this.startX;
+      var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
+      var threshold = this.threshold;
+      var signedOffsetSide = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nonZero = "" + bound.slack + this.unit;
+      var zero = "" + ZERO;
+      var offsetSide = Math.abs(signedOffsetSide);
+      var action = OPEN$2; // release the control for another session
+
+      this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
+
+      var response = (_response5 = {}, _response5[EVENT_OBJ$2] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+
+      function getResponse(state, trueForOpen) {
+        var opposite = 'oppositeDimension';
+
+        if (state === THRESHOLD$2 && trueForOpen || state === BELOW_THRESHOLD$2 && !trueForOpen) {
+          var _extends2;
+
+          return _extends((_extends2 = {}, _extends2[DIMENSION$2] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+        } else if (state === THRESHOLD$2 && !trueForOpen || state === BELOW_THRESHOLD$2 && trueForOpen) {
+          var _extends3;
+
+          return _extends((_extends3 = {}, _extends3[DIMENSION$2] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+        }
+
+        return {};
+      } // OPEN LOGIC
+
+
+      if (rect.displacementX < ZERO && (start >= this.minArea || start >= FALSE_WIDTH + signedOffsetSide)) {
+        if (offsetSide <= this.width * threshold) {
+          thresholdState.state = [THRESHOLD$2, CLOSE$2];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD$2, CLOSE$2];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
+        }
+
+        fn.call(this, action);
+        return;
+      } // CLOSE LOGIC
+
+
+      if (rect.displacementX > ZERO && this.resumeX >= FALSE_WIDTH) {
+        action = CLOSE$2;
+
+        if (offsetSide >= this.width * threshold) {
+          thresholdState.state = [THRESHOLD$2, OPEN$2];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD$2, OPEN$2];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
+        }
+
+        fn.call(this, action);
+      }
     };
 
-    _proto.end = function end() {};
-
     _proto.setContext = function setContext(ctx) {
-      this.context = ctx;
+      this._context = ctx;
       return this;
     };
 
     Right._getStyle = function _getStyle(elt, pseudoElt) {
       return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
+    };
+
+    Right._windowSize = function _windowSize() {
+      return window.screen.availWidth;
     } // no need for `window.onorientationchange`
     ;
 
-    _proto._loopWinSizeChangeEvent = function _loopWinSizeChangeEvent() {
-      var _this = this;
-
-      window.setInterval(function () {
-        _this.winSize = window.screen.availWidth;
-      }, 1e3);
+    _proto._updateOrientation = function _updateOrientation() {
+      this.winSize = typeof this._winSize === 'function' ? this._winSize() : Right._windowSize();
+      this.minArea = this.winSize - (this.bound.lower || this.options.maxStartArea || MAX_START_AREA$2);
     };
 
     return Right;
   }();
 
+  var DIRECTION$3 = 'top';
+  var DIMENSION$3 = 'dimension';
+  var DISPLACEMENT$3 = 'displacement';
+  var EVENT_OBJ$3 = 'event';
+  var THRESHOLD$3 = 'threshold';
+  var BELOW_THRESHOLD$3 = 'belowthreshold';
+  var OPEN$3 = 'open';
+  var CLOSE$3 = 'close';
+  var UNIT$3 = 'px';
+  var MAX_START_AREA$3 = 25;
+  var THRESHOLD_VALUE$3 = 0.667;
+  var FALSE_TOUCH_START_POINT$3 = 2;
+
   var Top =
   /*#__PURE__*/
   function () {
     /**
-     *
-     * @param {*} options
+     * @param {{}} options
      * an object containing all required properties
+     * @param {Bound} bound a boundary object
      */
-    function Top(options) {
+    function Top(options, bound) {
       this.options = options;
+      this.bound = bound;
+      /**
+       * Drawer Element
+       * @type {HTMLElement}
+       */
+
       this.element = options.ELEMENT;
       /**
        * Size of device window
+       *
+       * unused: required in `Right` and `Bottom`
+       * @type {Function}
        */
 
-      this.winSize = this.options.sizeOfWindow || window.screen.availHeight;
-      this.height = this.element.offsetHeight;
-      this.unit = this.options.unit;
+      this._winSize = this.options.sizeOfWindow || Top._windowSize;
+      this.winSize = this._winSize();
       /**
-       * @type number
-       * A maximum area where the draw-start is sensitive
+       * @type {number}
        */
 
-      this.maxArea = this.options.maxStartArea;
-      this.context = null;
+      this.height = this.options.SIZE;
+      this.unit = this.options.unit || UNIT$3;
+      /**
+       * @type {number}
+       * A maximum area where the draw-start is sensitive
+       * Use set boundary (`bound`) if there's an initial
+       * offset
+       */
+
+      this.maxArea = this.bound.lower || this.options.maxStartArea || MAX_START_AREA$3;
+      /**
+       * A threshold which the `touchmove` signal must attain
+       * before being qualified to stay shown
+       * the threshold should be a value between `0` and `1.0`
+       * @type {number}
+       */
+
+      this.threshold = this.options.threshold || THRESHOLD_VALUE$3;
+      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+
+      this.startX = -1;
+      this.startY = -1; // Touch coordinates (Touch Move)
+
+      this.resumeX = -1;
+      this.resumeY = -1; // Touch coordinates (Touch End) [these may not be important]
+
+      this.endX = -1;
+      this.endY = -1;
+      /**
+       * A control for scroll. This control prevents
+       * a clash between coordinates dancing between
+       * the (&delta;`X`) coords and (&delta;`Y`) coords.
+       * Utilising the `Rectangle` class to get bounds
+       * and isolate territories
+       * @type {boolean}
+       */
+
+      this.scrollControlSet = false;
+      this.scrollControl = null;
+      this.timing = {
+        /**
+         * @type {Date}
+         */
+        start: null,
+
+        /**
+         * @type {Date}
+         */
+        end: null
+      };
+      this._context = this;
     }
+    /**
+     * The `touchstart` event handler for the `Top` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchstart` event.
+     * @param {Function} fn - a callback function called when the `start`
+     * event is triggered
+     * @returns {void}
+     */
+
 
     var _proto = Top.prototype;
 
-    _proto.start = function start(e) {
+    _proto.start = function start(e, fn) {
+      this.timing.start = new Date();
       var start = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var startX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.startX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.startY = start;
       /**
-       * The `Drawer`'s `Top` class uses the `CSS property` `top`
+       * The `Drawer`'s `Top` class uses the `CSS property`, `top`
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(this.element.style.top.replace(/[^\d]*$/, ''));
-      var dimension = "-" + (this.height - start) + this.unit;
-      var displacement = "-" + (this.height - START) + this.unit;
+      var currentPosition = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      this.positionOnStart = currentPosition;
+      var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - start) + this.unit;
+      var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$3) + this.unit;
 
-      if (start >= ZERO && start <= this.maxArea && currentPosition != ZERO) {
-        this.element.style.top = displacement || dimension;
+      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
+        var _response;
+
+        var response = (_response = {}, _response[EVENT_OBJ$3] = e, _response[DIMENSION$3] = dimension, _response[DISPLACEMENT$3] = displacement, _response);
+        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+      }
+    }
+    /**
+     * The `touchmove` event handler for the `Top` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchmove` event.
+     * @param {Function} fn - a callback function called when the `move`
+     * event is triggered
+     * @returns {void}
+     */
+    ;
+
+    _proto.move = function move(e, fn) {
+      /* eslint complexity: ["error", 25] */
+      var resume = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.resumeX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.resumeY = resume;
+      var currentPosition = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nextAction = this.positionOnStart === ZERO ? CLOSE$3 : OPEN$3;
+      var start = this.startX;
+      var height = bound.upper || this.height;
+      /**
+       * When the touch doesn't start from the max-height
+       * of the element ignore `start` and use `height`
+       * as starting point.
+       */
+
+      var virtualStart = start > height ? height : start;
+      /**
+       * Dimension for opening. When the drawer is being opened,
+       * the `height` is the max dimension, and the `start` can
+       * only be less than the `height` (from a range of `0` to
+       * `this.maxArea` e.g `0` - `25`), so the current
+       * reading from `resume` is subtracted from the `height` to
+       * get the accurate position to update the drawer with.
+       */
+
+      var dimension = "-" + (height - resume) + this.unit;
+      /**
+       * Dimension for closing. When the drawer is being closed,
+       * the `height` is the max dimension and the `start` could
+       * possibly be more than the `height`
+       * or less than the `height`.
+       * To assure an accurate dimension the `virtualStart`
+       * determines whether to use the `height` as starting point
+       * or the actual `start`. If the actual start is more than
+       * `height`, the height becomes the start point else the `start`
+       */
+
+      var vdimension = "-" + (virtualStart - resume) + this.unit;
+      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var isBoundY = rect.greaterHeight;
+
+      if (!this.scrollControlSet) {
+        this.scrollControl = isBoundY;
+        this.scrollControlSet = !this.scrollControlSet;
+      } // OPEN LOGIC
+
+
+      if (start >= ZERO && (start <= this.maxArea || start <= height + currentPosition) && currentPosition !== ZERO && isBoundY && nextAction === OPEN$3 && this.scrollControl && rect.displacementY > ZERO) {
+        var _response2;
+
+        var response = (_response2 = {}, _response2[EVENT_OBJ$3] = e, _response2[DIMENSION$3] = dimension, _response2.open = true, _response2.close = false, _response2);
+        fn.call(this._context, response, rect);
+      } // CLOSE LOGIC
+
+
+      if (resume <= this.height && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE$3 && this.scrollControl && rect.displacementY < ZERO) {
+        var _response4;
+
+        var _response3 = (_response4 = {}, _response4[EVENT_OBJ$3] = e, _response4[DIMENSION$3] = vdimension, _response4.close = true, _response4.open = false, _response4);
+
+        fn.call(this._context, _response3, rect);
+      }
+    }
+    /**
+     * The `touchend` event handler for the `Top` drawer `class`
+     * @param {TouchEvent} e an event `object`: An event `object`
+     * representing an `object` of all `properties` related
+     * to the `touchend` event.
+     * @param {Function} fn - a callback function called when the `end`
+     * event is triggered
+     * @param {{}} thresholdState - a state object which should be passed
+     * by reference for updating by this method
+     * @returns {void}
+     */
+    ;
+
+    _proto.end = function end(e, fn, thresholdState) {
+      var _response5;
+
+      this.timing.end = new Date();
+      var end = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      this.endY = end;
+      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var start = this.startY;
+      var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
+      var threshold = this.threshold;
+      var signedOffsetSide = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
+      var bound = this.bound;
+      var nonZero = "" + bound.slack + this.unit;
+      var zero = "" + ZERO;
+      var height = bound.upper || this.height;
+      var offsetSide = Math.abs(signedOffsetSide);
+      var action = OPEN$3; // release the control for another session
+
+      this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
+
+      var response = (_response5 = {}, _response5[EVENT_OBJ$3] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+
+      function getResponse(state, trueForOpen) {
+        var opposite = 'oppositeDimension';
+
+        if (state === THRESHOLD$3 && trueForOpen || state === BELOW_THRESHOLD$3 && !trueForOpen) {
+          var _extends2;
+
+          return _extends((_extends2 = {}, _extends2[DIMENSION$3] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+        } else if (state === THRESHOLD$3 && !trueForOpen || state === BELOW_THRESHOLD$3 && trueForOpen) {
+          var _extends3;
+
+          return _extends((_extends3 = {}, _extends3[DIMENSION$3] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+        }
+
+        return {};
+      } // OPEN LOGIC
+
+
+      if (rect.displacementY > ZERO && (start <= this.maxArea || start <= height + signedOffsetSide)) {
+        if (offsetSide <= this.height * threshold) {
+          thresholdState.state = [THRESHOLD$3, CLOSE$3];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD$3, CLOSE$3];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], true);
+        }
+
+        fn.call(this, action);
+        return;
+      } // CLOSE LOGIC
+
+
+      if (rect.displacementY < ZERO && this.resumeY <= this.height) {
+        action = CLOSE$3;
+
+        if (offsetSide >= this.height * threshold) {
+          thresholdState.state = [THRESHOLD$3, OPEN$3];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
+        } else {
+          thresholdState.state = [BELOW_THRESHOLD$3, OPEN$3];
+          thresholdState.stateObj = getResponse(thresholdState.state[0], false);
+        }
+
+        fn.call(this, action);
       }
     };
 
-    _proto.move = function move() {};
-
-    _proto.end = function end() {};
-
     _proto.setContext = function setContext(ctx) {
-      this.context = ctx;
+      this._context = ctx;
       return this;
     };
 
     Top._getStyle = function _getStyle(elt, pseudoElt) {
       return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
-    } // no need for `window.onorientationchange`
-    ;
+    };
 
-    _proto._loopWinSizeChangeEvent = function _loopWinSizeChangeEvent() {
-      var _this = this;
-
-      window.setInterval(function () {
-        _this.winSize = window.screen.availWidth;
-      }, 1e3);
+    Top._windowSize = function _windowSize() {
+      return window.screen.availHeight;
     };
 
     return Top;
   }();
 
-  var BELOW_THRESHOLD$1 = 'belowthreshold';
-  var THRESHOLD$1 = 'threshold';
-  var START$1 = 'start';
+  var BELOW_THRESHOLD$4 = 'belowthreshold';
+  var THRESHOLD$4 = 'threshold';
+  var START = 'start';
   var MOVE = 'move';
   var END = 'end';
 
@@ -777,10 +1465,10 @@
   /*#__PURE__*/
   function () {
     /**
-     *
      * @param {{}} options an object of configuration options
+     * @param {Bound} bound a boundary object
      */
-    function SnappedDrawer(options) {
+    function SnappedDrawer(options, bound) {
       this._options = options;
       /**
        * @type {HTMLElement}
@@ -797,9 +1485,9 @@
        */
 
       this._callbacks = null;
-      this._context = null;
+      this._context = this;
 
-      this._setCalibration(this._direction);
+      this._setCalibration(this._direction, bound);
     } // enum
 
 
@@ -818,7 +1506,7 @@
       var _this = this;
 
       // get registered callbacks or set default
-      var startfn = this._callbacks ? this._callbacks[START$1] : def;
+      var startfn = this._callbacks ? this._callbacks[START] : def;
       var movefn = this._callbacks ? this._callbacks[MOVE] : def;
       var endfn = this._callbacks ? this._callbacks[END] : def;
 
@@ -864,11 +1552,11 @@
     ;
 
     _proto.deactivate = function deactivate() {
-      for (var i = 0; i < this.events; i++) {
+      for (var i = 0; i < this.events.length; i++) {
         this._target.removeEventListener(this.events[i], this._handlers[i]);
       }
 
-      this._register();
+      this._register(null);
     }
     /**
      * A function used to register callbacks for the `Drawer class` `touchstart`,
@@ -930,6 +1618,10 @@
       return this;
     };
 
+    _proto.toString = function toString() {
+      return '[object SnappedDrawer]';
+    };
+
     _proto._processThresholdState = function _processThresholdState(state) {
       if (Object.keys(state).length < 1) {
         return;
@@ -939,25 +1631,25 @@
       var vector = state.stateObj.rect;
       delete state.stateObj.rect;
 
-      this._callbacks[thState].call(this._context || this, state.state, state.stateObj, vector);
+      this._callbacks[thState].call(this._context, state.state, state.stateObj, vector);
     };
 
-    _proto._setCalibration = function _setCalibration(point) {
+    _proto._setCalibration = function _setCalibration(point, bound) {
       switch (point) {
         case SnappedDrawer.UP:
-          this._callibration = new Top(this._options);
+          this._callibration = new Top(this._options, bound);
           break;
 
         case SnappedDrawer.LEFT:
-          this._callibration = new Left(this._options);
+          this._callibration = new Left(this._options, bound);
           break;
 
         case SnappedDrawer.DOWN:
-          this._callibration = new Bottom(this._options);
+          this._callibration = new Bottom(this._options, bound);
           break;
 
         case SnappedDrawer.RIGHT:
-          this._callibration = new Right(this._options);
+          this._callibration = new Right(this._options, bound);
           break;
 
         default:
@@ -968,7 +1660,7 @@
     _proto._registerCallbacks = function _registerCallbacks(event, fn) {
       var _ref;
 
-      this._callbacks = this._callbacks || (_ref = {}, _ref[START$1] = def, _ref[MOVE] = def, _ref[END] = def, _ref[THRESHOLD$1] = def, _ref[BELOW_THRESHOLD$1] = def, _ref);
+      this._callbacks = this._callbacks || (_ref = {}, _ref[START] = def, _ref[MOVE] = def, _ref[END] = def, _ref[THRESHOLD$4] = def, _ref[BELOW_THRESHOLD$4] = def, _ref);
 
       if (event in this._callbacks) {
         this._callbacks[event] = fn;
@@ -981,7 +1673,7 @@
         handlers[_key] = arguments[_key];
       }
 
-      this._handlers = [].concat(handlers);
+      this._handlers = handlers;
     };
 
     return SnappedDrawer;
