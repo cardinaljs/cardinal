@@ -1,47 +1,48 @@
-import NavService from './navservice'
-
-const TRANSITION_STYLE = 'ease'
+import STATE from './state'
+import {
+  getAttribute
+} from './../util'
 
 class HashState {
-  constructor(options) {
+  constructor(parentService, options) {
     this.options = options
-    this.nav = options.ELEMENT
+    this.parentService = parentService
     this.button = options.INIT_ELEM
-    this.backdrop = options.BACKDROP
     this.event = 'hashchange'
-    this.direction = options.DIRECTION
-    this.width = this.nav.offSetWidth
-    this.transTime = options.transition / 1e3
-    this.transition = `${this.direction} ${TRANSITION_STYLE} ${this.transTime}s`
-    // state of the nav, whether open or close
-    this.alive = false
+    this.handler = null
   }
 
   activate() {
+    const handler = (e) => {
+      this._hashchange(e)
+    }
+    this._register(handler)
     window.addEventListener(this.event, this.handler)
     return 0
   }
 
-  handler(e) {
-    const hash = HashState._getHash(e)
-    const ns = new NavService(this.options)
-    if (hash === null) {
-      ns._close()
-    } else if (hash === this.button.getAttribute('href')) {
-      ns._open()
+  deactivate() {
+    window.removeEventListener(this.event, this.handler)
+    this._register(null)
+    return 0
+  }
+
+  _hashchange(e) {
+    const oldHash = HashState._getHash(e.oldURL)
+    if (oldHash === getAttribute(this.button, 'href') && STATE.navstate && STATE.navstate.alive) {
+      this.parentService._close()
     }
   }
 
-  static _getHash(e) {
-    let hash = e.newURL
+  _register(handler) {
+    this.handler = handler
+  }
+
+  static _getHash(uri) {
+    let hash = uri
     const indexOfHash = hash.lastIndexOf('#')
     hash = indexOfHash !== -1 ? hash.slice(indexOfHash).replace(/(?:[^\w\d-]+)$/) : null
     return hash
-  }
-
-  deactivate() {
-    window.removeEventListener(this.event, this.handler)
-    return 0
   }
 }
 
