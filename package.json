@@ -4,12 +4,10 @@
   "description": "A ",
   "main": "index.js",
   "scripts": {
-    "build": "cd src & tsc",
     "card": "node build/cardinal.build.js",
-    "lint": "eslint src_modules/js/ --no-ignore",
-    "postcss": "postcss --config build/postcss.config.js --replace dist/css/nav/navigation.css",
-    "rollup": "rollup --config build/rollup.config.js --sourcemap",
-    "sass": "sass src_modules/scss/:dist/css/"
+    "lint": "eslint src/ --no-ignore",
+    "minify": "uglifyjs --compress typeofs=false --mangle --comments \"/^!/\" --sourcemap \"content=dist/cardinal.js.map,includeSources,url=cardinal.min.js.map\" --output dist/cardinal.min.js dist/cardinal.js",
+    "rollup": "rollup --config build/rollup.config.js --sourcemap"
   },
   "repository": {
     "type": "git",
@@ -18,27 +16,31 @@
   "keywords": [
     "navigation",
     "drawer",
+    "sheets",
+    "roundel",
     "touch",
-    "hash",
+    "html",
+    "web",
+    "api",
+    "app",
     "nav"
   ],
   "author": "Caleb Pitan",
   "license": "Apache-2.0",
-  "dependencies": {
-    "sass": "^1.17.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.3.4",
     "@babel/plugin-proposal-class-properties": "^7.4.0",
     "@babel/preset-env": "^7.3.4",
-    "autoprefixer": "^9.5.0",
     "babel-eslint": "^10.0.1",
+    "chai": "^4.2.0",
     "eslint": "^5.16.0",
-    "postcss": "^7.0.14",
-    "postcss-cli": "^6.1.2",
+    "jest": "^24.8.0",
+    "mocha": "^6.1.4",
     "rollup": "^1.6.0",
     "rollup-plugin-babel": "^4.3.2",
-    "rollup-plugin-node-resolve": "^4.0.1"
+    "rollup-plugin-node-resolve": "^4.0.1",
+    "uglify-js": "^3.5.10"
   }
 }
