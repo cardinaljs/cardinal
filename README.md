@@ -14,7 +14,6 @@ The high-levels are implementations of the low-level APIs that make user interfa
 **Modules**  
 Every module that's not low-level, except otherwise stated.  
 
-circles: https://github.com/cardinaljs/cardinal/blob/master/src/circular-path
-drawer: https://github.com/cardinaljs/cardinal/blob/master/src/drawer
-nav: https://github.com/cardinaljs/cardinal/blob/master/src/nav 
-
+[circles]: https://github.com/cardinaljs/cardinal/blob/master/src/circular-path
+[drawer]: https://github.com/cardinaljs/cardinal/blob/master/src/drawer
+[nav]: https://github.com/cardinaljs/cardinal/blob/master/src/nav 
