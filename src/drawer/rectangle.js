@@ -1,6 +1,9 @@
-import { Vector } from './vector'
+import {
+  VectorRectangle
+} from './vector'
 
-export class Rectangle extends Vector {
+export class Rectangle extends VectorRectangle {
+  // eslint-disable-next-line no-useless-constructor
   constructor(x1, y1, x2, y2) {
     super(x1, y1, x2, y2)
   }
