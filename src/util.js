@@ -1,9 +1,65 @@
-const MAX_THRESHOLD = 1
-const MIN_ILLEGAL_THRESHOLD = 0
-
-export const NAV_BOX_SHADOW = '0.2rem 0 0.2rem 0 rgba(0,0,0,.4)'
+// constants
+const BLUR_SPREAD_SHADE = '0.7rem 0 rgba(0,0,0,.3)'
+export const NAV_BOX_SHADOW = {
+  top: `0 0.2rem ${BLUR_SPREAD_SHADE}`,
+  left: `0.2rem 0 ${BLUR_SPREAD_SHADE}`,
+  bottom: `0 -0.2rem ${BLUR_SPREAD_SHADE}`,
+  right: `-0.2rem 0 ${BLUR_SPREAD_SHADE}`
+}
 export const ZERO = 0
+export const DIRECTIONS = [
+  'top', 'left',
+  'bottom', 'right'
+]
 
+// classes
+export class Path {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+  }
+
+  /**
+   * Get difference between two paths
+   * @param {Path} path1 Path Object
+   * @param {Path} path2 Path Object
+   * @returns {Path} A different Path
+   */
+  static pathDifference(path1, path2) {
+    const x = path1.x - path2.x
+    const y = path1.y - path2.y
+    return new Path(x, y)
+  }
+
+  /**
+   * Join two different paths
+   * @param {Path} path1 Path Object
+   * @param {Path} path2 Path Object
+   * @returns {Path} A joined Path
+   */
+  static join(path1, path2) {
+    const x = path1.x + path2.x
+    const y = path1.y + path2.y
+    return new Path(x, y)
+  }
+}
+
+export class Bound {
+  constructor(lower, upper) {
+    this.lower = lower
+    this.upper = upper
+  }
+
+  get gap() {
+    return this.upper - this.lower
+  }
+
+  get slack() {
+    return this.lower - this.upper
+  }
+}
+
+// functions
 export function dataCamelCase(data) {
   // remove 'data-' prefix and return camelCase string
   return camelCase(data.substring(5), '-')
@@ -17,7 +73,7 @@ export function camelCase(data, delim = '-') {
 }
 
 export function unique(max) {
-  Math.floor(Math.random() * max)
+  return Math.floor(Math.random() * max)
 }
 
 export function $(query) {
@@ -46,6 +102,8 @@ export function getData(el, attr) {
 }
 
 export function validateThreshold(tsh) {
+  const MAX_THRESHOLD = 1
+  const MIN_ILLEGAL_THRESHOLD = 0
   if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
     tsh = MAX_THRESHOLD - tsh
     return tsh
@@ -61,35 +119,37 @@ export function validateThreshold(tsh) {
  * be accessed
  * @param {string | string[] | {}} property A property/properties
  * to set or get
- * @param {string | number} style value to set as
+ * @param {string | number} value value to set as
  * @returns {CSSStyleDeclaration | string} A css style property
  * or CSSStyleDeclaration object
  */
-export function css(el, property, style = null) {
+export function css(...args) {
+  if (args.length < 1) {
+    return null
+  }
+  const el = args[0]
+  const property = args[1]
+  let value = args[2]
   const STYLEMAP = window.getComputedStyle(el)
 
-  style = style || null
-  property = property || null
-
-  if (typeof property === 'string' && style !== null) {
+  if (typeof property === 'string' && value) {
     // setting one property
-    el.style[property] = style
+    el.style[property] = value
     return null
   }
   if (typeof property === 'object' && property instanceof Object) {
     // `style` MUST = null
     // setting many properties
-    style = property
-    for (const prop of Object.keys(style)) {
-      el.style[prop] = style[prop]
+    value = property
+    for (const prop of Object.keys(value)) {
+      el.style[prop] = value[prop]
     }
   } else if (property instanceof Array) {
     // return all values of properties in the array for
     // the element as object
     const ostyle = {}
-    style = STYLEMAP
-    for (const prop of style) {
-      ostyle[prop] = style[prop]
+    for (const prop of STYLEMAP) {
+      ostyle[prop] = STYLEMAP[prop]
     }
     return ostyle
   } else {
