@@ -6,11 +6,11 @@ Cardinal is a Javascript es6 library with a great **Touch API** that gives the w
 ### The low-level  
 The low-level toolkits can't be used to give UIs their functions but are like an _al-qaedea_ of algorithms (logical, mathematical, maybe statistical too) exported by a class of rich APIs to create/write codes that gives functional UIs.  
 **Modules**
-   1. [Circular Path](circles)
-   2. [Drawer](drawer)
+   1. [Circular Path][circles]
+   2. [Drawer][drawer]
 
 ### The high-level  
-The high-levels are implementations of the low-level APIs that make user interfaces functional, offering great user experience. Although some don't implement any low-level API and are independent. Those that implement are dependent, and for production, the dependencies of the dependents **must be available (on JS runtimes) imported or loaded (on the web).** For example, to use the [Nav](nav) module the [Drawer](drawer) module must be imported or loaded as dependency.
+The high-levels are implementations of the low-level APIs that make user interfaces functional, offering great user experience. Although some don't implement any low-level API and are independent. Those that implement are dependent, and for production, the dependencies of the dependents **must be available (on JS runtimes) imported or loaded (on the web).** For example, to use the [Nav][nav] module the [Drawer][drawer] module must be imported or loaded as dependency.
 **Modules**  
 Every module that's not low-level, except otherwise stated.  
 
