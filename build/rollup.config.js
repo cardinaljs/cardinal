@@ -2,6 +2,8 @@ import babel from 'rollup-plugin-babel'
 import path from 'path'
 import resolve from 'rollup-plugin-node-resolve'
 
+const bannerbars = require('./starbang')
+
 const external = []
 const globals = {}
 
@@ -11,6 +13,7 @@ export default {
     file: path.resolve(__dirname, '../dist/cardinal.js'),
     format: 'umd',
     name: 'Cardinal',
+    banner: bannerbars(),
     globals
   },
   external,
