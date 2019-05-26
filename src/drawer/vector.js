@@ -1,13 +1,11 @@
-export class VectorRectangle {
+import {
+  Rectangle
+} from './rectangle'
+
+export class VectorRectangle extends Rectangle {
+  // eslint-disable-next-line no-useless-constructor
   constructor(x1, y1, x2, y2) {
-    this.coordsX = {
-      x1,
-      x2
-    }
-    this.coordsY = {
-      y1,
-      y2
-    }
+    super(x1, y1, x2, y2)
   }
 
   get displacementX() {
