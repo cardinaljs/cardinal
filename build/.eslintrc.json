@@ -1,0 +1,14 @@
+{
+  "parserOptions": {
+    "sourceType": "script"
+  },
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "extends": ["../.eslintrc.json"],
+  "rules": {
+    "no-console": "off",
+    "spaced-comment": "off"
+  }
+}
