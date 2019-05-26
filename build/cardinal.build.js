@@ -2,6 +2,7 @@
  * Development build script to build
  * meaningful plugins for your use
  */
+
 'use strict'
 
 const path = require('path')
@@ -27,16 +28,19 @@ const cardinal = {
   Nav: path.resolve(__dirname, '../src/nav/index.js'),
   Drawer: path.resolve(__dirname, '../src/drawer/index.js'),
   CircularPath: path.resolve(__dirname, '../src/circular-path/index.js'),
+  Util: path.resolve(__dirname, '../src/util.js')
   //Sheets: path.resolve(__dirname, '../src/sheets/index.js')
 }
-const distro = '../dist/'
+const distro = '../dist/standalone/'
 
 function mason(mod) {
   console.log(`Your mason is building ${mod}`)
   const modToFilename = `${mod.toLowerCase()}.js`
   const outFile = path.resolve(__dirname, `${distro}${modToFilename}`)
-  const external = []
-  const globals = {}
+  const external = [cardinal.Util]
+  const globals = {
+    [cardinal.Util]: 'Util'
+  }
 
   if (mod === 'Nav') {
     external.push(cardinal.Drawer)
@@ -55,7 +59,7 @@ function mason(mod) {
       name: mod,
       sourcemap: true,
       globals
-    }).then(() => console.log(`Mason successfuly built ${mod}`)).catch((err) => console.error(`Mason fell from a skyscrapper while building ${mod}`))
+    }).then(() => console.log(`Mason successfuly built ${mod}`)).catch(() => console.error(`Mason fell from a skyscrapper while building ${mod}`))
   })
 }
 Object.keys(cardinal).forEach((mod) => mason(mod))
