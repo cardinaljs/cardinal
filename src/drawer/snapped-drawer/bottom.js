@@ -1,10 +1,11 @@
 import {
+  Path,
   ZERO,
   validateThreshold
 } from './../../util'
 import {
-  Rectangle
-} from './../rectangle'
+  VectorRectangle
+} from './../vector'
 
 const DIRECTION = 'bottom'
 const DIMENSION = 'dimension'
@@ -132,7 +133,7 @@ export default class Bottom {
         [DIMENSION]: dimension,
         [DISPLACEMENT]: displacement
       }
-      fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1))
+      fn.call(this._context, response, new Path(this.startX, this.startY))
     }
   }
 
@@ -211,7 +212,7 @@ export default class Bottom {
      * `height`, the height becomes the start point else the `start`
      */
     const vdimension = `-${resume - virtualStart}${this.unit}`
-    const rect = new Rectangle(
+    const rect = new VectorRectangle(
       this.startX,
       this.startY,
       this.resumeX,
@@ -225,7 +226,9 @@ export default class Bottom {
     }
 
     // OPEN LOGIC
-    if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT + currentPosition) && currentPosition !== ZERO && isBoundY && nextAction === OPEN && this.scrollControl && rect.displacementY < ZERO) {
+    if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT + currentPosition) &&
+    currentPosition !== ZERO && isBoundY && nextAction === OPEN &&
+    this.scrollControl && rect.displacementY < ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -236,7 +239,8 @@ export default class Bottom {
     }
 
     // CLOSE LOGIC
-    if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE && this.scrollControl && rect.displacementY > ZERO) {
+    if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower &&
+    isBoundY && nextAction === CLOSE && this.scrollControl && rect.displacementY > ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
@@ -266,7 +270,7 @@ export default class Bottom {
     this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX
     this.endY = end
 
-    const rect = new Rectangle(this.startX, this.startY, this.endX, this.endY)
+    const rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY)
 
     const start = this.startY
     const TIMING = this.timing.end.getTime() - this.timing.start.getTime()
@@ -309,6 +313,12 @@ export default class Bottom {
       }
       return {}
     }
+    this.startX = -1
+    this.startY = -1
+    this.resumeX = -1
+    this.resumeY = -1
+    this.endX = -1
+    this.endY = -1
 
     // OPEN LOGIC
     if (rect.displacementY < ZERO && (start >= this.minArea || start >= FALSE_HEIGHT + signedOffsetSide)) {

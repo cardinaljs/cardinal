@@ -1,10 +1,11 @@
 import {
+  Path,
   ZERO,
   validateThreshold
 } from './../../util'
 import {
-  Rectangle
-} from './../rectangle'
+  VectorRectangle
+} from './../vector'
 
 const DIRECTION = 'right'
 const DIMENSION = 'dimension'
@@ -132,7 +133,7 @@ export default class Right {
         [DIMENSION]: dimension,
         [DISPLACEMENT]: displacement
       }
-      fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1))
+      fn.call(this._context, response, new Path(this.startX, this.startY))
     }
   }
 
@@ -211,7 +212,7 @@ export default class Right {
      * `width`, the width becomes the start point else the `start`
      */
     const vdimension = `-${resume - virtualStart}${this.unit}`
-    const rect = new Rectangle(
+    const rect = new VectorRectangle(
       this.startX,
       this.startY,
       this.resumeX,
@@ -225,7 +226,9 @@ export default class Right {
     }
 
     // OPEN LOGIC
-    if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN && this.scrollControl && rect.displacementX < ZERO) {
+    if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) &&
+    currentPosition !== ZERO && isBoundX && nextAction === OPEN &&
+    this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: dimension,
@@ -236,7 +239,8 @@ export default class Right {
     }
 
     // CLOSE LOGIC
-    if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX > ZERO) {
+    if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower &&
+    isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX > ZERO) {
       const response = {
         [EVENT_OBJ]: e,
         [DIMENSION]: vdimension,
@@ -266,7 +270,7 @@ export default class Right {
     this.endX = end
     this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
 
-    const rect = new Rectangle(this.startX, this.startY, this.endX, this.endY)
+    const rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY)
 
     const start = this.startX
     const TIMING = this.timing.end.getTime() - this.timing.start.getTime()
@@ -309,6 +313,12 @@ export default class Right {
       }
       return {}
     }
+    this.startX = -1
+    this.startY = -1
+    this.resumeX = -1
+    this.resumeY = -1
+    this.endX = -1
+    this.endY = -1
 
     // OPEN LOGIC
     if (rect.displacementX < ZERO && (start >= this.minArea || start >= FALSE_WIDTH + signedOffsetSide)) {
