@@ -1,6 +1,7 @@
 import {
   Bound,
   DIRECTIONS,
+  NAVSTATE_EVENTS,
   NAV_BOX_SHADOW,
   css,
   getAttribute,
@@ -21,6 +22,7 @@ const TRANS_TIMING = '0.1s'
 const TRANS_TEMPLATE = `${TRANSITION_STYLE} ${TRANS_TIMING}`
 const HIDDEN = 'hidden'
 const SCROLL = 'scroll'
+const AUTO = 'auto'
 const HREF = 'href'
 const HASH_ATTR = `data-${HREF}`
 const START = 'start'
@@ -199,12 +201,16 @@ class NavDrawer {
     this._backdrop.hide(this.options.TRANSITION)
     css(this.element, {
       [EFFECT]: options.transition,
-      [OVERFLOW]: SCROLL
+      [OVERFLOW]: AUTO
     })
     if (!this.bound.lower) {
       this.element.style.boxShadow = 'none'
     }
-    this._setState('open')
+    this._setState('close')
+    // callback for when nav is hidden
+    if (STATE.event[NAVSTATE_EVENTS.hide]) {
+      STATE.event[NAVSTATE_EVENTS.hide]()
+    }
   }
 
   _showPrep(options) {
@@ -213,9 +219,13 @@ class NavDrawer {
     this._backdrop.show(this.options.TRANSITION)
     css(this.element, {
       [EFFECT]: options.transition,
-      [OVERFLOW]: SCROLL
+      [OVERFLOW]: AUTO
     })
     this._setState('open')
+    // callback for when nav is shown
+    if (STATE.event[NAVSTATE_EVENTS.show]) {
+      STATE.event[NAVSTATE_EVENTS.show]()
+    }
   }
 
   _calcSpeed(time) {
@@ -229,7 +239,7 @@ class NavDrawer {
 
   _checkDirection() {
     if (this.direction !== Drawer.LEFT && this.direction !== Drawer.RIGHT) {
-      throw RangeError('Direction out of range')
+      throw new RangeError('Direction out of range')
     }
   }
 
