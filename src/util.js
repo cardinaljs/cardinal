@@ -11,6 +11,10 @@ export const DIRECTIONS = [
   'top', 'left',
   'bottom', 'right'
 ]
+export const NAVSTATE_EVENTS = {
+  show: 'show',
+  hide: 'hide'
+}
 
 // classes
 export class Path {
@@ -98,7 +102,7 @@ export function getData(el, attr) {
   if (el.dataset && el.dataset[prop]) {
     return el.dataset[prop]
   }
-  return getAttribute(el, attr)
+  return getAttribute(el, attr.substring(5))
 }
 
 export function validateThreshold(tsh) {
