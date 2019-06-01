@@ -214,7 +214,10 @@ class NavDrawer {
   }
 
   _showPrep(options) {
-    window.location.hash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR)
+    const buttonHash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR)
+    if (buttonHash) {
+      window.location.hash = buttonHash
+    }
     this._body.style.overflow = HIDDEN
     this._backdrop.show(this.options.TRANSITION)
     css(this.element, {
