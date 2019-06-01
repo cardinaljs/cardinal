@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-05-18T16:00:25.142Z
+  * Build Date: 2019-06-01T23:37:49.197Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -14,10 +14,10 @@
   * limitations under the License.
   */
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('../drawer/index.js')) :
-  typeof define === 'function' && define.amd ? define(['../drawer/index.js'], factory) :
-  (global = global || self, global.Nav = factory(global.Drawer));
-}(this, function (Drawer) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('../util.js'), require('../drawer/index.js')) :
+  typeof define === 'function' && define.amd ? define(['../util.js', '../drawer/index.js'], factory) :
+  (global = global || self, global.Nav = factory(global.Util, global.Drawer));
+}(this, function (util_js, Drawer) { 'use strict';
 
   Drawer = Drawer && Drawer.hasOwnProperty('default') ? Drawer['default'] : Drawer;
 
@@ -76,144 +76,6 @@
     subClass.__proto__ = superClass;
   }
 
-  // constants
-  var BLUR_SPREAD_SHADE = '0.7rem 0 rgba(0,0,0,.3)';
-  var NAV_BOX_SHADOW = {
-    top: "0 0.2rem " + BLUR_SPREAD_SHADE,
-    left: "0.2rem 0 " + BLUR_SPREAD_SHADE,
-    bottom: "0 -0.2rem " + BLUR_SPREAD_SHADE,
-    right: "-0.2rem 0 " + BLUR_SPREAD_SHADE
-  };
-  var ZERO = 0;
-  var DIRECTIONS = ['top', 'left', 'bottom', 'right']; // classes
-  var Bound =
-  /*#__PURE__*/
-  function () {
-    function Bound(lower, upper) {
-      this.lower = lower;
-      this.upper = upper;
-    }
-
-    _createClass(Bound, [{
-      key: "gap",
-      get: function get() {
-        return this.upper - this.lower;
-      }
-    }, {
-      key: "slack",
-      get: function get() {
-        return this.lower - this.upper;
-      }
-    }]);
-
-    return Bound;
-  }(); // functions
-
-  function dataCamelCase(data) {
-    // remove 'data-' prefix and return camelCase string
-    return camelCase(data.substring(5), '-');
-  }
-  function camelCase(data, delim) {
-    if (delim === void 0) {
-      delim = '-';
-    }
-
-    var list = data instanceof Array ? data : data.split(delim);
-    return list.reduce(function (acc, cur) {
-      return acc + cur.charAt(0).toUpperCase() + cur.slice(1);
-    });
-  }
-  function unique(max) {
-    return Math.floor(Math.random() * max);
-  }
-  function $(query) {
-    return document.querySelectorAll(query)[0];
-  }
-  function getAttribute(el, attr) {
-    return el.getAttribute(attr);
-  }
-  function hasAttribute(el, attr) {
-    return el.hasAttribute(attr);
-  }
-  function setAttribute(el, attr, value) {
-    el.setAttribute(attr, value);
-  }
-  function getData(el, attr) {
-    var prop = dataCamelCase(attr); // this may return `undefined` in some Safari
-
-    if (el.dataset && el.dataset[prop]) {
-      return el.dataset[prop];
-    }
-
-    return getAttribute(el, attr);
-  }
-  /**
-   * @param {HTMLElement} el an HTMLElement whose style should
-   * be accessed
-   * @param {string | string[] | {}} property A property/properties
-   * to set or get
-   * @param {string | number} value value to set as
-   * @returns {CSSStyleDeclaration | string} A css style property
-   * or CSSStyleDeclaration object
-   */
-
-  function css() {
-    if (arguments.length < 1) {
-      return null;
-    }
-
-    var el = arguments.length <= 0 ? undefined : arguments[0];
-    var property = arguments.length <= 1 ? undefined : arguments[1];
-    var value = arguments.length <= 2 ? undefined : arguments[2];
-    var STYLEMAP = window.getComputedStyle(el);
-
-    if (typeof property === 'string' && value) {
-      // setting one property
-      el.style[property] = value;
-      return null;
-    }
-
-    if (typeof property === 'object' && property instanceof Object) {
-      // `style` MUST = null
-      // setting many properties
-      value = property;
-
-      var _arr = Object.keys(value);
-
-      for (var _i = 0; _i < _arr.length; _i++) {
-        var prop = _arr[_i];
-        el.style[prop] = value[prop];
-      }
-    } else if (property instanceof Array) {
-      // return all values of properties in the array for
-      // the element as object
-      var ostyle = {};
-
-      for (var _iterator = STYLEMAP, _isArray = Array.isArray(_iterator), _i2 = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-        var _ref;
-
-        if (_isArray) {
-          if (_i2 >= _iterator.length) break;
-          _ref = _iterator[_i2++];
-        } else {
-          _i2 = _iterator.next();
-          if (_i2.done) break;
-          _ref = _i2.value;
-        }
-
-        var _prop = _ref;
-        ostyle[_prop] = STYLEMAP[_prop];
-      }
-
-      return ostyle;
-    } else {
-      // get style from property
-      return STYLEMAP[property];
-    }
-
-    return STYLEMAP;
-  }
-
   var Backdrop =
   /*#__PURE__*/
   function () {
@@ -224,7 +86,7 @@
     var _proto = Backdrop.prototype;
 
     _proto.show = function show(time) {
-      css(this.backdrop, {
+      util_js.css(this.backdrop, {
         display: 'block',
         opacity: 1,
         transition: "opacity linear " + time / 1e3 + "s"
@@ -234,19 +96,19 @@
     _proto.hide = function hide(time) {
       var _this = this;
 
-      css(this.backdrop, {
+      util_js.css(this.backdrop, {
         opacity: 0,
         transition: "opacity linear " + time / 1e3 + "s"
       });
       window.setTimeout(function () {
-        css(_this.backdrop, {
+        util_js.css(_this.backdrop, {
           display: 'none'
         });
       }, time);
     };
 
     _proto.setOpacity = function setOpacity(val) {
-      css(this.backdrop, {
+      util_js.css(this.backdrop, {
         display: 'block',
         opacity: val,
         transition: 'none'
@@ -256,67 +118,22 @@
     return Backdrop;
   }();
 
+  // interface
   var STATE = {
-    navstate: null
+    navstate: null,
+    event: new Proxy({}, {
+      set: function set(obj, prop, val) {
+        if (typeof val !== 'function') {
+          throw new TypeError("the set value: '" + val + "' is not callable");
+        }
+
+        obj[prop] = val;
+        return true;
+      }
+    })
   };
 
-  var HashState =
-  /*#__PURE__*/
-  function () {
-    function HashState(parentService, options) {
-      this.options = options;
-      this.parentService = parentService;
-      this.button = options.INIT_ELEM;
-      this.event = 'hashchange';
-      this.handler = null;
-    }
-
-    var _proto = HashState.prototype;
-
-    _proto.activate = function activate() {
-      var _this = this;
-
-      var handler = function handler(e) {
-        _this._hashchange(e);
-      };
-
-      this._register(handler);
-
-      window.addEventListener(this.event, this.handler);
-      return 0;
-    };
-
-    _proto.deactivate = function deactivate() {
-      window.removeEventListener(this.event, this.handler);
-
-      this._register(null);
-
-      return 0;
-    };
-
-    _proto._hashchange = function _hashchange(e) {
-      var oldHash = HashState._getHash(e.oldURL);
-
-      if (oldHash === getAttribute(this.button, 'href') && STATE.navstate && STATE.navstate.alive) {
-        this.parentService._close();
-      }
-    };
-
-    _proto._register = function _register(handler) {
-      this.handler = handler;
-    };
-
-    HashState._getHash = function _getHash(uri) {
-      var hash = uri;
-      var indexOfHash = hash.lastIndexOf('#');
-      hash = indexOfHash !== -1 ? hash.slice(indexOfHash).replace(/(?:[^\w\d-]+)$/) : null;
-      return hash;
-    };
-
-    return HashState;
-  }();
-
-  var ZERO$1 = 0;
+  var ZERO = 0;
   var KILO = 1e3;
   var MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.5;
   var MIN_POSITIVE_DISPLACEMENT = 10;
@@ -328,6 +145,7 @@
   var TRANS_TEMPLATE = TRANSITION_STYLE + " " + TRANS_TIMING;
   var HIDDEN = 'hidden';
   var SCROLL = 'scroll';
+  var AUTO = 'auto';
   var HREF = 'href';
   var HASH_ATTR = "data-" + HREF;
   var START = 'start';
@@ -356,7 +174,7 @@
 
       this._checkDirection();
 
-      this.directionString = DIRECTIONS[this.direction];
+      this.directionString = util_js.DIRECTIONS[this.direction];
       this.bound = this._bound;
 
       var o = _extends({}, options, {
@@ -383,7 +201,7 @@
     _proto._startHandler = function _startHandler(response) {
       var _css;
 
-      css(this.element, (_css = {}, _css[this.directionString] = response.dimension, _css.boxShadow = NAV_BOX_SHADOW[this.directionString], _css[EFFECT] = this.transition, _css));
+      util_js.css(this.element, (_css = {}, _css[this.directionString] = response.dimension, _css.boxShadow = util_js.NAV_BOX_SHADOW[this.directionString], _css[EFFECT] = this.transition, _css));
       this._body.style.overflow = HIDDEN;
     };
 
@@ -391,7 +209,7 @@
       var _css2;
 
       var curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2;
-      css(this.element, (_css2 = {}, _css2[this.directionString] = response.dimension, _css2[EFFECT] = 'none', _css2[OVERFLOW] = HIDDEN, _css2));
+      util_js.css(this.element, (_css2 = {}, _css2[this.directionString] = response.dimension, _css2[EFFECT] = 'none', _css2[OVERFLOW] = HIDDEN, _css2));
 
       if (this.direction === Drawer.RIGHT) {
         var WIN_SIZE = window.screen.availWidth;
@@ -433,9 +251,9 @@
       var LOGIC;
 
       if (this.direction === Drawer.LEFT && isClosed || this.direction === Drawer.RIGHT && !isClosed) {
-        LOGIC = displacement > ZERO$1 && displacement >= MPD && rect.greaterWidth;
+        LOGIC = displacement > ZERO && displacement >= MPD && rect.greaterWidth;
       } else {
-        LOGIC = displacement < ZERO$1 && displacement <= MND && rect.greaterWidth;
+        LOGIC = displacement < ZERO && displacement <= MND && rect.greaterWidth;
       }
 
       if (overallEventTime / KILO < MTTOB) {
@@ -497,26 +315,41 @@
 
       this._backdrop.hide(this.options.TRANSITION);
 
-      css(this.element, (_css3 = {}, _css3[EFFECT] = options.transition, _css3[OVERFLOW] = SCROLL, _css3));
+      util_js.css(this.element, (_css3 = {}, _css3[EFFECT] = options.transition, _css3[OVERFLOW] = AUTO, _css3));
 
       if (!this.bound.lower) {
         this.element.style.boxShadow = 'none';
       }
 
-      this._setState('open');
+      this._setState('close'); // callback for when nav is hidden
+
+
+      if (STATE.event[util_js.NAVSTATE_EVENTS.hide]) {
+        STATE.event[util_js.NAVSTATE_EVENTS.hide]();
+      }
     };
 
     _proto._showPrep = function _showPrep(options) {
       var _css4;
 
-      window.location.hash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR);
+      var buttonHash = util_js.getAttribute(this.options.INIT_ELEM, HREF) || util_js.getData(this.options.INIT_ELEM, HASH_ATTR);
+
+      if (buttonHash) {
+        window.location.hash = buttonHash;
+      }
+
       this._body.style.overflow = HIDDEN;
 
       this._backdrop.show(this.options.TRANSITION);
 
-      css(this.element, (_css4 = {}, _css4[EFFECT] = options.transition, _css4[OVERFLOW] = SCROLL, _css4));
+      util_js.css(this.element, (_css4 = {}, _css4[EFFECT] = options.transition, _css4[OVERFLOW] = AUTO, _css4));
 
-      this._setState('open');
+      this._setState('open'); // callback for when nav is shown
+
+
+      if (STATE.event[util_js.NAVSTATE_EVENTS.show]) {
+        STATE.event[util_js.NAVSTATE_EVENTS.show]();
+      }
     };
 
     _proto._calcSpeed = function _calcSpeed(time) {
@@ -531,7 +364,7 @@
 
     _proto._checkDirection = function _checkDirection() {
       if (this.direction !== Drawer.LEFT && this.direction !== Drawer.RIGHT) {
-        throw RangeError('Direction out of range');
+        throw new RangeError('Direction out of range');
       }
     };
 
@@ -580,10 +413,10 @@
     }, {
       key: "_bound",
       get: function get() {
-        var curPos = css(this.element, this.directionString).replace(/[^\d]*$/, '');
+        var curPos = util_js.css(this.element, this.directionString).replace(/[^\d]*$/, '');
         var upperBound = this.elementSize;
         var lowerBound = upperBound + parseInt(curPos, 10);
-        return new Bound(lowerBound, upperBound);
+        return new util_js.Bound(lowerBound, upperBound);
       }
     }]);
 
@@ -615,7 +448,7 @@
        * @private
        */
 
-      this._closeClicked = false;
+      this._closeInvoked = false;
       /**
        * @readonly
        * @private
@@ -630,8 +463,8 @@
     _proto.activate = function activate() {
       var _this = this;
 
-      var ClickHandler = function ClickHandler(e) {
-        _this.handler(e);
+      var ClickHandler = function ClickHandler(mouseEvent) {
+        _this.handler(mouseEvent);
       };
 
       var BackdropHandler = function BackdropHandler() {
@@ -639,10 +472,10 @@
       };
 
       var TransitionHandler = function TransitionHandler() {
-        if (!_this.alive && _this._closeClicked) {
+        if (!_this.alive && _this._closeInvoked) {
           _this._cleanShadow();
 
-          _this._closeClicked = false;
+          _this._closeInvoked = false;
         }
       };
 
@@ -663,7 +496,7 @@
     };
 
     _proto.deactivate = function deactivate() {
-      throw new ReferenceError('cannot deactivate API specified as default. This service must be kept running');
+      throw new ReferenceError('cannot deactivate a default service. This service must be kept running');
     };
 
     _proto.forceDeactivate = function forceDeactivate() {
@@ -677,21 +510,26 @@
       this._register(null);
     };
 
-    _proto.handler = function handler(e) {
-      e.preventDefault();
-      window.location.hash = getAttribute(this.button, 'href');
+    _proto.handler = function handler(mouseEvent) {
+      mouseEvent.preventDefault();
 
       var state = NavService._toNum(NavService.css(this.nav, this.direction));
 
-      if (state < ZERO) {
+      if (state < util_js.ZERO) {
+        var buttonHash = util_js.getAttribute(this.button, 'href') || util_js.getData(this.button, 'data-href');
+
+        if (buttonHash) {
+          window.location.hash = buttonHash;
+        }
+
         this._open();
       } else {
         this._close();
       }
     };
 
-    NavService.css = function css$1(el, property, style) {
-      return css(el, property, style);
+    NavService.css = function css(el, property, style) {
+      return util_js.css(el, property, style);
     };
 
     NavService._toNum = function _toNum(val) {
@@ -711,9 +549,14 @@
     _proto._open = function _open() {
       var _style;
 
-      var style = (_style = {}, _style[this.direction] = ZERO, _style[EFFECT$1] = this.transition, _style.boxShadow = NAV_BOX_SHADOW[this.direction], _style);
+      var style = (_style = {}, _style[this.direction] = util_js.ZERO, _style[EFFECT$1] = this.transition, _style.boxShadow = util_js.NAV_BOX_SHADOW[this.direction], _style);
       NavService.css(this.nav, style);
-      this.backdrop.show(this.options.TRANSITION);
+      this.backdrop.show(this.options.TRANSITION); // callback for when nav is shown
+
+      if (STATE.event[util_js.NAVSTATE_EVENTS.show]) {
+        STATE.event[util_js.NAVSTATE_EVENTS.show]();
+      }
+
       this.alive = true;
       var state = {
         alive: this.alive,
@@ -730,9 +573,14 @@
 
       var style = (_style2 = {}, _style2[this.direction] = this._initialState, _style2[EFFECT$1] = this.transition, _style2);
       NavService.css(this.nav, style);
-      this.backdrop.hide(this.options.TRANSITION);
+      this.backdrop.hide(this.options.TRANSITION); // callback for when nav is hidden
+
+      if (STATE.event[util_js.NAVSTATE_EVENTS.hide]) {
+        STATE.event[util_js.NAVSTATE_EVENTS.hide]();
+      }
+
       this.alive = false;
-      this._closeClicked = true;
+      this._closeInvoked = true;
       var state = {
         alive: this.alive,
         activity: {
@@ -750,16 +598,79 @@
     return NavService;
   }();
 
+  var PopService =
+  /*#__PURE__*/
+  function () {
+    function PopService(parentService, options) {
+      this.options = options;
+      this.parentService = parentService;
+      this.button = options.INIT_ELEM;
+      this.event = 'hashchange';
+      this.handler = null;
+    }
+
+    var _proto = PopService.prototype;
+
+    _proto.activate = function activate() {
+      var _this = this;
+
+      var handler = function handler(hashChangeEvent) {
+        _this._hashchange(hashChangeEvent);
+      };
+
+      this._register(handler);
+
+      window.addEventListener(this.event, this.handler, true);
+      return 0;
+    };
+
+    _proto.deactivate = function deactivate() {
+      window.removeEventListener(this.event, this.handler, true);
+
+      this._register(null);
+
+      return 0;
+    }
+    /**
+     * @param {HashChangeEvent} hashChangeEvent Event object
+     * @returns {void}
+     */
+    ;
+
+    _proto._hashchange = function _hashchange(hashChangeEvent) {
+      var oldHash = PopService._getHash(hashChangeEvent.oldURL);
+
+      if (oldHash === (util_js.getAttribute(this.button, 'href') || util_js.getData(this.button, 'data-href')) && STATE.navstate && STATE.navstate.alive) {
+        hashChangeEvent.stopImmediatePropagation();
+
+        this.parentService._close();
+      }
+    };
+
+    _proto._register = function _register(handler) {
+      this.handler = handler;
+    };
+
+    PopService._getHash = function _getHash(uri) {
+      var hash = uri;
+      var indexOfHash = hash.lastIndexOf('#');
+      hash = indexOfHash !== -1 ? hash.slice(indexOfHash).replace(/(?:[^\w\d-]+)$/) : null;
+      return hash;
+    };
+
+    return PopService;
+  }();
+
   var BACKDROP = 'backdrop';
-  var DEF_CLASSNAME = 'cardinal-navcard';
-  var MEDIA_HASH = 'data-hash-max-width';
-  var MEDIA_DRAW = 'data-draw-max-width';
-  var _CLASS = 'class';
+  var MEDIA_DRAW = 'data-max-width';
+  var CLASS_TYPE = '[object NavCard]';
+  var NAME = 'Nav';
+  var NAV = window[NAME] || null;
 
   var NavCard =
   /*#__PURE__*/
   function () {
-    function NavCard() {
+    function NavCard(src, dest) {
       /**
        * Covert Backdrop
        * ----------------
@@ -774,7 +685,7 @@
        */
       this.backdrop = document.createElement('div');
       this.backdrop.className = BACKDROP;
-      css(this.backdrop, {
+      util_js.css(this.backdrop, {
         background: 'rgba(0,0,0,.4)',
         height: '100%',
         width: '100%',
@@ -783,26 +694,22 @@
         top: 0,
         left: 0
       });
+      this.src = src;
+      this.dest = dest;
       this.body = document.body;
       this.Drawer = null;
-      this.NavService = null;
-      this.HashState = null;
+      this.SheetService = null;
+      this.PopService = null;
     }
 
     var _proto = NavCard.prototype;
 
-    _proto.setup = function setup(el, options) {
-      if (!el) {
-        throw new TypeError('expected \'el\' to be selector string or HTMLElement');
+    _proto.setup = function setup(options) {
+      if (!this.src) {
+        throw new TypeError("expected " + NAME + " to be constructed with at least 'src' argument:\n        expected 'src' to be selector string or HTMLElement.\n          constructor(src: string | HTMLElement, dest?: string | HTMLElement)");
       }
 
-      var _ = 1,
-          backdrop = _.backdrop,
-          HASH_NAV_MAX_WIDTH = _.HASH_NAV_MAX_WIDTH,
-          NAV_DRAW_MAX_WIDTH = _.NAV_DRAW_MAX_WIDTH,
-          destinationId = _.destinationId,
-          destination = _.destination;
-      var opts = NavCard.defaultConfig;
+      var opts = typeof Object.assign === 'function' ? Object.assign({}, NavCard.defaultConfig) : _extends({}, NavCard.defaultConfig);
 
       if (options && typeof options === 'object') {
         var _arr = Object.keys(options);
@@ -818,80 +725,85 @@
         }
       }
 
-      var dataAccess = opts.accessAttr;
-      /**
-       * Initialization element e.g <button ...</button>
-       */
+      this.dest = this.dest ? this.dest : opts.dest;
+      var srcEl = this.src instanceof HTMLElement ? this.src : util_js.$(this.src);
+      var destEl = this.dest instanceof HTMLElement ? this.dest : util_js.$(this.dest);
+      var maxWidth = util_js.getData(destEl, MEDIA_DRAW);
 
-      var element = el instanceof HTMLElement ? el : $(el);
-      destinationId = getData(element, dataAccess); // check if the data-* attribute value is a valid css selector
-      // if not prepend a '#' to it as id selector is default
-
-      var isCSSSelector = /^(?:#|\.|\u005b[^\u005c]\u005c)/.test(destinationId);
-      var isClass = /^\./.test(destinationId);
-      destinationId = isCSSSelector ? destinationId : "#" + destinationId;
-      destination = $(destinationId); // we want a class too, so in case we've got an id selector
-      // find the classname or assign a unique class
-
-      var defaultClass = DEF_CLASSNAME + "-" + unique(2 << 7); // eslint-disable-next-line no-nested-ternary
-
-      var classname = isClass ? destinationId : hasAttribute(destination, _CLASS) ? getAttribute(destination, _CLASS) : (setAttribute(destination, _CLASS, defaultClass), defaultClass);
-      var classlist = classname.split(/\s+/); // eslint-disable-next-line prefer-template
-
-      classname = '.' + (classlist.length >= 2 ? classlist[0] + '.' + classlist[1] : classname);
-      destination = isClass ? destination : $(classname);
-
-      if (opts.backdrop) {
-        var backdropclass = opts.backdropClass || false; // if `opts.backdrop` and no `backdropclass` given
-        // append our custom backdrop
+      if (opts.useBackdrop) {
+        var backdropclass = opts.backdrop || false; // if `opts.useBackdrop` and no `backdrop` given
+        // append a custom backdrop
 
         if (!backdropclass) {
-          destination.insertAdjacentElement('beforeBegin', this.backdrop);
-        }
-
-        if (typeof backdropclass === 'string') {
+          destEl.insertAdjacentElement('beforeBegin', this.backdrop);
+        } else if (typeof backdropclass === 'string') {
           // check if backdropclass is normal string or css class selector
-          backdrop = /^\./.test(backdropclass) ? backdropclass : "." + backdropclass;
-          this.backdrop = $(backdrop);
+          var backdrop = /^\./.test(backdropclass) ? backdropclass : "." + backdropclass;
+          this.backdrop = util_js.$(backdrop);
+        } else if (backdropclass instanceof HTMLElement) {
+          this.backdrop = backdropclass;
+        } else {
+          throw new TypeError('expected \'options.backdrop\' to be a selector string or HTMLElement.');
         }
       }
 
-      HASH_NAV_MAX_WIDTH = getData(destination, MEDIA_HASH);
-      NAV_DRAW_MAX_WIDTH = getData(destination, MEDIA_DRAW);
-      HASH_NAV_MAX_WIDTH = /px$/.test(HASH_NAV_MAX_WIDTH) ? HASH_NAV_MAX_WIDTH : HASH_NAV_MAX_WIDTH + "px";
-      NAV_DRAW_MAX_WIDTH = /px$/.test(NAV_DRAW_MAX_WIDTH) ? NAV_DRAW_MAX_WIDTH : NAV_DRAW_MAX_WIDTH + "px";
+      maxWidth = /px$/.test(maxWidth) ? maxWidth : maxWidth + "px";
       var defaultOptions = {
-        ELEMENT: destination,
-        INIT_ELEM: element,
+        ELEMENT: destEl,
+        INIT_ELEM: srcEl,
         BACKDROP: new Backdrop(this.backdrop),
         BODY: this.body,
         TRANSITION: opts.transition,
-        DIRECTION: DIRECTIONS[opts.direction],
-        unit: options.unit
+        DIRECTION: util_js.DIRECTIONS[opts.direction],
+        unit: opts.unit
       };
 
       var drawerOptions = _extends({}, defaultOptions, {
-        MAX_WIDTH: NAV_DRAW_MAX_WIDTH,
+        MAX_WIDTH: maxWidth,
         DIRECTION: opts.direction,
         maxStartArea: opts.maxStartArea,
         threshold: opts.threshold
       });
 
-      var hashOptions = _extends({}, defaultOptions, {
-        MAX_WIDTH: HASH_NAV_MAX_WIDTH
-      });
-
-      return new NavMountWorker(Object.assign({}, {
-        defaultOptions: defaultOptions
-      }, {
-        drawerOptions: drawerOptions
-      }, {
+      var hashOptions = {
+        INIT_ELEM: defaultOptions.INIT_ELEM
+      };
+      return new NavMountWorker({
+        defaultOptions: defaultOptions,
+        drawerOptions: drawerOptions,
         hashOptions: hashOptions
-      }));
+      });
+    };
+
+    _proto.terminate = function terminate(service) {
+      var flag = 0;
+      flag |= service;
+
+      if (flag & NavCard.SERVICES.Default && this.SheetService instanceof NavService) {
+        this.SheetService.deactivate();
+      }
+
+      if (flag & NavCard.SERVICES.Drawer && this.Drawer instanceof NavDrawer) {
+        this.Drawer.deactivate();
+      }
+
+      if (flag & NavCard.SERVICES.Hash && this.PopService instanceof PopService) {
+        this.PopService.deactivate();
+      }
+
+      if (!flag) {
+        throw new Error('a service id is required');
+      }
     };
 
     _proto.toString = function toString() {
-      return '[object NavCard]';
+      return CLASS_TYPE;
+    };
+
+    NavCard.namespace = function namespace(name) {
+      window[name] = window[name] || {};
+      window[name][NAME] = NavCard;
+      window[NAME] = NAV;
     };
 
     _proto._drawerAPI = function _drawerAPI(options) {
@@ -911,13 +823,13 @@
     _proto._hashAPI = function _hashAPI(options) {
       var _this2 = this;
 
-      this.HashState = new HashState(this.NavService, options);
+      this.PopService = new PopService(this.SheetService, options);
       return {
         activate: function activate() {
-          return _this2.HashState.activate();
+          return _this2.PopService.activate();
         },
         deactivate: function deactivate() {
-          return _this2.HashState.deactivate();
+          return _this2.PopService.deactivate();
         }
       };
     };
@@ -925,44 +837,15 @@
     _proto._defaultAPI = function _defaultAPI(options) {
       var _this3 = this;
 
-      this.NavService = new NavService(options);
+      this.SheetService = new NavService(options);
       return {
         activate: function activate() {
-          return _this3.NavService.activate();
+          return _this3.SheetService.activate();
         },
         deactivate: function deactivate() {
-          return _this3.NavService.deactivate();
+          return _this3.SheetService.deactivate();
         }
       };
-    };
-
-    _proto.terminate = function terminate(service) {
-      // this._*API(null).deactivate()
-      switch (service) {
-        case NavCard.SERVICES.Default:
-          if (this.NavService instanceof NavService) {
-            this.NavService.deactivate();
-          }
-
-          break;
-
-        case NavCard.SERVICES.Drawer:
-          if (this.Drawer instanceof NavDrawer) {
-            this.Drawer.deactivate();
-          }
-
-          break;
-
-        case NavCard.SERVICES.Hash:
-          if (this.HashState instanceof HashState) {
-            this.HashState.deactivate();
-          }
-
-          break;
-
-        default:
-          throw new Error('a service id is required');
-      }
     };
 
     return NavCard;
@@ -970,19 +853,19 @@
 
   _defineProperty(NavCard, "defaultConfig", {
     transition: 500,
-    direction: 'left',
-    backdrop: false,
-    backdropClass: null,
-    accessAttr: 'data-target',
+    direction: -1,
+    useBackdrop: false,
+    backdrop: null,
+    dest: null,
     maxStartArea: 25,
     threshold: 1 / 2,
     unit: 'px'
   });
 
   _defineProperty(NavCard, "SERVICES", {
-    Default: 2,
-    Drawer: 4,
-    Hash: 8
+    Default: 0x20,
+    Drawer: 0x40,
+    Pop: 0x80
   });
 
   var NavMountWorker =
@@ -1001,21 +884,49 @@
     var _proto2 = NavMountWorker.prototype;
 
     _proto2.mount = function mount() {
-      this._defaultAPI(this.options.defaultOptions).activate();
+      var DEFAULT_ACTIVE = !this._defaultAPI(this.options.defaultOptions).activate();
+      var DRAWER_ACTIVE = !this._drawerAPI(this.options.drawerOptions).activate();
+      var HASH_ACTIVE = !this._hashAPI(this.options.hashOptions).activate();
+      return new Promise(function (resolve, reject) {
+        if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
+          reject(new Error('one or more services could not activate'));
+          return;
+        }
 
-      this._drawerAPI(this.options.drawerOptions).activate();
-
-      this._hashAPI(this.options.hashOptions).activate();
+        resolve(NavStateEvent);
+      });
     };
 
     _proto2.unmount = function unmount() {
-      this.NavService.forceDeactivate();
+      this.SheetService.forceDeactivate();
       this.Drawer.deactivate();
-      this.HashState.deactivate();
+      this.PopService.deactivate();
+    };
+
+    _proto2.toString = function toString() {
+      return '[object NavMountWorker]';
     };
 
     return NavMountWorker;
   }(NavCard);
+
+  var NavStateEvent = {
+    events: [util_js.NAVSTATE_EVENTS.show, util_js.NAVSTATE_EVENTS.hide],
+    on: function on(event, handle) {
+      if (!(NavStateEvent.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      STATE.event[event] = handle;
+    },
+    off: function off(event) {
+      if (!(NavStateEvent.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      STATE.event[event] = null;
+    }
+  };
 
   return NavCard;
 

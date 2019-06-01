@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-04-24T13:14:21.606Z
+  * Build Date: 2019-06-01T23:37:49.197Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -132,6 +132,74 @@
 
     _proto._findOppUseSOH = function _findOppUseSOH(angle, hyp) {
       return Math.sin(angle) * hyp;
+    };
+
+    _proto._firstPath = function _firstPath() {
+      var _this2 = this;
+
+      var paths = [];
+
+      this._angles.forEach(function (angle) {
+        if (angle === ZERO || angle <= POINT_ANGLE && angle % RIGHT_ANGLE === ZERO) {
+          paths.push(_this2.radius);
+          return;
+        }
+
+        _this2._quad = _this2._getQuadrant(angle);
+        angle = _this2._quad !== Quadrant.FIRST ? _this2._quad - angle : angle;
+
+        var radAngle = _this2._degToRad(angle);
+
+        var hyp = _this2._chordLength(radAngle); // RAT: Right Angle Triangle
+        // These are the angles of a RAT that overlaps the circle
+        // with its hypotenuse being the chord that closes the
+        // inner "cut" triangle
+        // angleAofRAT = 90 or what else do you think.
+
+
+        var angleCofRAT = _this2._getLastTwoEqAngles(radAngle);
+
+        var angleBofRAT = RIGHT_ANGLE - angleCofRAT; // what would be the path is the `opp` side with respect
+        // to `angleBofRAT` i.e the line that faces it.
+
+        paths.push(_this2._findOppUseSOH(_this2._degToRad(angleBofRAT), hyp));
+      });
+
+      return paths;
+    };
+
+    _proto._resolvePath = function _resolvePath(val, quadrant) {
+      var _this3 = this;
+
+      var paths = [];
+
+      this._angles.forEach(function (angle) {
+        if (angle === ZERO || angle <= POINT_ANGLE && angle % RIGHT_ANGLE === ZERO) {
+          paths.push(_this3.radius);
+          return;
+        }
+
+        _this3._quad = _this3._getQuadrant(angle);
+        angle = _this3._quad !== Quadrant.FIRST ? _this3._quad - angle : angle;
+
+        var radAngle = _this3._degToRad(angle);
+
+        var hyp = _this3._chordLength(radAngle); // RAT: Right Angle Triangle
+        // These are the angles of a RAT that overlaps the circle
+        // with its hypotenuse being the chord that closes the
+        // inner "cut" triangle
+        // angleAofRAT = 90 or what else do you think.
+
+
+        var angleCofRAT = _this3._getLastTwoEqAngles(radAngle);
+
+        var angleBofRAT = RIGHT_ANGLE - angleCofRAT; // what would be the path is the `opp` side with respect
+        // to `angleBofRAT` i.e the line that faces it.
+
+        paths.push(_this3._findOppUseSOH(_this3._degToRad(angleBofRAT), hyp));
+      });
+
+      return paths;
     }
     /**
      * Finds the value of the last two equal angles in the
@@ -152,15 +220,17 @@
     };
 
     _proto._getQuadrant = function _getQuadrant(angle) {
-      var quad;
-      [Quadrant.FOURTH, Quadrant.THIRD, Quadrant.SECOND, Quadrant.FIRST].forEach(function (value, index, array) {
-        if (angle > value) {
-          quad = array[--index];
-        } else {
-          quad = array[index];
-        }
-      });
-      return quad;
+      if (angle <= Quadrant.FIRST) {
+        return Quadrant.FIRST;
+      } else if (angle <= Quadrant.SECOND && angle > Quadrant.FIRST) {
+        return Quadrant.SECOND;
+      } else if (angle <= Quadrant.THIRD && angle > Quadrant.SECOND) {
+        return Quadrant.THIRD;
+      } else if (angle <= Quadrant.FOURTH && angle > Quadrant.THIRD) {
+        return Quadrant.FOURTH;
+      }
+
+      throw RangeError('Quadrant out of range');
     };
 
     _proto._chordLength = function _chordLength(angle) {
@@ -185,40 +255,8 @@
     };
 
     _createClass(CircularPath, [{
-      key: "paths",
-      get: function get() {
-        var _this2 = this;
-
-        var paths = [];
-
-        this._angles.forEach(function (angle) {
-          if (angle === ZERO || angle <= POINT_ANGLE && angle % RIGHT_ANGLE === ZERO) {
-            paths.push(_this2.radius);
-            return;
-          }
-
-          _this2._quad = _this2._getQuadrant(angle);
-          angle = _this2._quad !== Quadrant.FIRST ? _this2._quad - angle : angle;
-
-          var radAngle = _this2._degToRad(angle);
-
-          var hyp = _this2._chordLength(radAngle); // RAT: Right Angle Triangle
-          // These are the angles of a RAT that overlaps the circle
-          // with its hypotenuse being the chord that closes the
-          // inner "cut" triangle
-          // angleAofRAT = 90 or what else do you think.
-
-
-          var angleCofRAT = _this2._getLastTwoEqAngles(radAngle);
-
-          var angleBofRAT = RIGHT_ANGLE - angleCofRAT; // what would be the path is the `opp` side with respect
-          // to `angleBofRAT` i.e the line that faces it.
-
-          paths.push(_this2._findOppUseSOH(_this2._degToRad(angleBofRAT), hyp));
-        });
-
-        return paths;
-      }
+      key: "path",
+      get: function get() {}
     }]);
 
     return CircularPath;

@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-05-18T16:00:25.142Z
+  * Build Date: 2019-06-01T23:37:49.197Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -14,10 +14,10 @@
   * limitations under the License.
   */
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = global || self, global.Drawer = factory());
-}(this, function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('../util.js')) :
+  typeof define === 'function' && define.amd ? define(['../util.js'], factory) :
+  (global = global || self, global.Drawer = factory(global.Util));
+}(this, function (util_js) { 'use strict';
 
   function _defineProperties(target, props) {
     for (var i = 0; i < props.length; i++) {
@@ -74,70 +74,43 @@
     subClass.__proto__ = superClass;
   }
 
-  var ZERO = 0;
-  function validateThreshold(tsh) {
-    var MAX_THRESHOLD = 1;
-    var MIN_ILLEGAL_THRESHOLD = 0;
-
-    if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
-      tsh = MAX_THRESHOLD - tsh;
-      return tsh;
-    } else if (tsh < MIN_ILLEGAL_THRESHOLD) {
-      tsh = MAX_THRESHOLD;
-      return tsh;
-    }
-
-    return MAX_THRESHOLD;
-  }
-
-  var VectorRectangle =
-  /*#__PURE__*/
-  function () {
-    function VectorRectangle(x1, y1, x2, y2) {
-      this.coordsX = {
-        x1: x1,
-        x2: x2
-      };
-      this.coordsY = {
-        y1: y1,
-        y2: y2
-      };
-    }
-
-    _createClass(VectorRectangle, [{
-      key: "displacementX",
-      get: function get() {
-        return this.coordsX.x2 - this.coordsX.x1;
-      }
-    }, {
-      key: "displacementY",
-      get: function get() {
-        return this.coordsY.y2 - this.coordsY.y1;
-      }
-    }, {
-      key: "diagonalLength",
-      get: function get() {
-        if (!this.displacementY) {
-          return this.displacementX;
-        } else if (!this.displacementX) {
-          return this.displacementY;
-        }
-
-        return Math.sqrt(Math.pow(this.displacementY, 2) + Math.pow(this.displacementX, 2));
-      }
-    }]);
-
-    return VectorRectangle;
-  }();
-
   var Rectangle =
   /*#__PURE__*/
-  function (_VectorRectangle) {
-    _inheritsLoose(Rectangle, _VectorRectangle);
+  function () {
+    function Rectangle() {
+      for (var _len = arguments.length, paths = new Array(_len), _key = 0; _key < _len; _key++) {
+        paths[_key] = arguments[_key];
+      }
 
-    // eslint-disable-next-line no-useless-constructor
-    function Rectangle(x1, y1, x2, y2) {
-      return _VectorRectangle.call(this, x1, y1, x2, y2) || this;
+      if (paths.length === 4) {
+        var x1 = paths[0],
+            y1 = paths[1],
+            x2 = paths[2],
+            y2 = paths[3];
+        this.coordsX = {
+          x1: x1,
+          x2: x2
+        };
+        this.coordsY = {
+          y1: y1,
+          y2: y2
+        };
+      } else if (paths.length === 2) {
+        var _paths$ = paths[0],
+            _x = _paths$.x1,
+            _y = _paths$.y1;
+        var _paths$2 = paths[1],
+            _x2 = _paths$2.x2,
+            _y2 = _paths$2.y2;
+        this.coordsX = {
+          x1: _x,
+          x2: _x2
+        };
+        this.coordsY = {
+          y1: _y,
+          y2: _y2
+        };
+      }
     } // getter
 
 
@@ -164,7 +137,47 @@
     }]);
 
     return Rectangle;
-  }(VectorRectangle);
+  }();
+
+  var VectorRectangle =
+  /*#__PURE__*/
+  function (_Rectangle) {
+    _inheritsLoose(VectorRectangle, _Rectangle);
+
+    // eslint-disable-next-line no-useless-constructor
+    function VectorRectangle() {
+      for (var _len = arguments.length, paths = new Array(_len), _key = 0; _key < _len; _key++) {
+        paths[_key] = arguments[_key];
+      }
+
+      return _Rectangle.call.apply(_Rectangle, [this].concat(paths)) || this;
+    }
+
+    _createClass(VectorRectangle, [{
+      key: "displacementX",
+      get: function get() {
+        return this.coordsX.x2 - this.coordsX.x1;
+      }
+    }, {
+      key: "displacementY",
+      get: function get() {
+        return this.coordsY.y2 - this.coordsY.y1;
+      }
+    }, {
+      key: "diagonalLength",
+      get: function get() {
+        if (!this.displacementY) {
+          return this.displacementX;
+        } else if (!this.displacementX) {
+          return this.displacementY;
+        }
+
+        return Math.sqrt(Math.pow(this.displacementY, 2) + Math.pow(this.displacementX, 2));
+      }
+    }]);
+
+    return VectorRectangle;
+  }(Rectangle);
 
   var DIRECTION = 'bottom';
   var DIMENSION = 'dimension';
@@ -227,7 +240,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = util_js.validateThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -294,11 +307,11 @@
       var dimension = bound.lower ? "-" + (bound.upper - (WIN_HEIGHT - bound.lower)) + this.unit : "-" + (bound.upper - (WIN_HEIGHT - start)) + this.unit;
       var displacement = "-" + (bound.upper - (WIN_HEIGHT - FALSE_TOUCH_START_POINT)) + this.unit;
 
-      if (start <= WIN_HEIGHT && start >= this.minArea && currentPosition !== ZERO) {
+      if (start <= WIN_HEIGHT && start >= this.minArea && currentPosition !== util_js.ZERO) {
         var _response;
 
         var response = (_response = {}, _response[EVENT_OBJ] = e, _response[DIMENSION] = dimension, _response[DISPLACEMENT] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        fn.call(this._context, response, new util_js.Path(this.startX, this.startY));
       }
     }
     /**
@@ -321,7 +334,7 @@
       this.resumeY = resume;
       var currentPosition = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
       var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN;
+      var nextAction = this.positionOnStart === util_js.ZERO ? CLOSE : OPEN;
       var start = this.startY;
       var height = bound.upper || this.height;
       /**
@@ -373,7 +386,7 @@
        */
 
       var vdimension = "-" + (resume - virtualStart) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundY = rect.greaterHeight;
 
       if (!this.scrollControlSet) {
@@ -382,7 +395,7 @@
       } // OPEN LOGIC
 
 
-      if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT + currentPosition) && currentPosition !== ZERO && isBoundY && nextAction === OPEN && this.scrollControl && rect.displacementY < ZERO) {
+      if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT + currentPosition) && currentPosition !== util_js.ZERO && isBoundY && nextAction === OPEN && this.scrollControl && rect.displacementY < util_js.ZERO) {
         var _response2;
 
         var response = (_response2 = {}, _response2[EVENT_OBJ] = e, _response2[DIMENSION] = dimension, _response2.open = true, _response2.close = false, _response2);
@@ -390,7 +403,7 @@
       } // CLOSE LOGIC
 
 
-      if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE && this.scrollControl && rect.displacementY > ZERO) {
+      if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE && this.scrollControl && rect.displacementY > util_js.ZERO) {
         var _response4;
 
         var _response3 = (_response4 = {}, _response4[EVENT_OBJ] = e, _response4[DIMENSION] = vdimension, _response4.close = true, _response4.open = false, _response4);
@@ -420,14 +433,14 @@
       var end = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.endY = end;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startY;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
       var signedOffsetSide = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
       var bound = this.bound;
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO;
+      var zero = "" + util_js.ZERO;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN; // release the control for another session
 
@@ -449,10 +462,16 @@
         }
 
         return {};
-      } // OPEN LOGIC
+      }
 
+      this.startX = -1;
+      this.startY = -1;
+      this.resumeX = -1;
+      this.resumeY = -1;
+      this.endX = -1;
+      this.endY = -1; // OPEN LOGIC
 
-      if (rect.displacementY < ZERO && (start >= this.minArea || start >= FALSE_HEIGHT + signedOffsetSide)) {
+      if (rect.displacementY < util_js.ZERO && (start >= this.minArea || start >= FALSE_HEIGHT + signedOffsetSide)) {
         if (offsetSide <= this.height * threshold) {
           thresholdState.state = [THRESHOLD, CLOSE];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
@@ -466,7 +485,7 @@
       } // CLOSE LOGIC
 
 
-      if (rect.displacementY > ZERO && this.resumeY >= FALSE_HEIGHT) {
+      if (rect.displacementY > util_js.ZERO && this.resumeY >= FALSE_HEIGHT) {
         action = CLOSE;
 
         if (offsetSide >= this.height * threshold) {
@@ -564,7 +583,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE$1;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = util_js.validateThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -627,11 +646,11 @@
       var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - start) + this.unit;
       var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$1) + this.unit;
 
-      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
+      if (start >= util_js.ZERO && start <= this.maxArea && currentPosition !== util_js.ZERO) {
         var _response;
 
         var response = (_response = {}, _response[EVENT_OBJ$1] = e, _response[DIMENSION$1] = dimension, _response[DISPLACEMENT$1] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        fn.call(this._context, response, new util_js.Path(this.startX, this.startY));
       }
     }
     /**
@@ -652,7 +671,7 @@
       this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
       var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO ? CLOSE$1 : OPEN$1;
+      var nextAction = this.positionOnStart === util_js.ZERO ? CLOSE$1 : OPEN$1;
       var start = this.startX;
       var width = bound.upper || this.width;
       /**
@@ -684,7 +703,7 @@
        */
 
       var vdimension = "-" + (virtualStart - resume) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundX = rect.greaterWidth;
 
       if (!this.scrollControlSet) {
@@ -693,7 +712,7 @@
       } // OPEN LOGIC
 
 
-      if (start >= ZERO && (start <= this.maxArea || start <= width + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN$1 && this.scrollControl && rect.displacementX > ZERO) {
+      if (start >= util_js.ZERO && (start <= this.maxArea || start <= width + currentPosition) && currentPosition !== util_js.ZERO && isBoundX && nextAction === OPEN$1 && this.scrollControl && rect.displacementX > util_js.ZERO) {
         var _response2;
 
         var response = (_response2 = {}, _response2[EVENT_OBJ$1] = e, _response2[DIMENSION$1] = dimension, _response2.open = true, _response2.close = false, _response2);
@@ -701,7 +720,7 @@
       } // CLOSE LOGIC
 
 
-      if (resume <= width && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$1 && this.scrollControl && rect.displacementX < ZERO) {
+      if (resume <= width && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$1 && this.scrollControl && rect.displacementX < util_js.ZERO) {
         var _response4;
 
         var _response3 = (_response4 = {}, _response4[EVENT_OBJ$1] = e, _response4[DIMENSION$1] = vdimension, _response4.close = true, _response4.open = false, _response4);
@@ -729,14 +748,14 @@
       var end = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.endX = end;
       this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startX;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
       var signedOffsetSide = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
       var bound = this.bound;
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO;
+      var zero = "" + util_js.ZERO;
       var width = bound.upper || this.width;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN$1; // release the control for another session
@@ -759,10 +778,16 @@
         }
 
         return {};
-      } // OPEN LOGIC
+      }
 
+      this.startX = -1;
+      this.startY = -1;
+      this.resumeX = -1;
+      this.resumeY = -1;
+      this.endX = -1;
+      this.endY = -1; // OPEN LOGIC
 
-      if (rect.displacementX > ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
+      if (rect.displacementX > util_js.ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
         if (offsetSide <= this.width * threshold) {
           thresholdState.state = [THRESHOLD$1, CLOSE$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
@@ -776,7 +801,7 @@
       } // CLOSE LOGIC
 
 
-      if (rect.displacementX < ZERO && this.resumeX <= this.width) {
+      if (rect.displacementX < util_js.ZERO && this.resumeX <= this.width) {
         action = CLOSE$1;
 
         if (offsetSide >= this.width * threshold) {
@@ -789,13 +814,6 @@
 
         fn.call(this, action);
       }
-
-      this.startX = -1;
-      this.startY = -1;
-      this.resumeX = -1;
-      this.resumeY = -1;
-      this.endX = -1;
-      this.endY = -1;
     };
 
     _proto.setContext = function setContext(ctx) {
@@ -875,7 +893,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE$2;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = util_js.validateThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -942,11 +960,11 @@
       var dimension = bound.lower ? "-" + (bound.upper - (WIN_WIDTH - bound.lower)) + this.unit : "-" + (bound.upper - (WIN_WIDTH - start)) + this.unit;
       var displacement = "-" + (bound.upper - (WIN_WIDTH - FALSE_TOUCH_START_POINT$2)) + this.unit;
 
-      if (start <= WIN_WIDTH && start >= this.minArea && currentPosition !== ZERO) {
+      if (start <= WIN_WIDTH && start >= this.minArea && currentPosition !== util_js.ZERO) {
         var _response;
 
         var response = (_response = {}, _response[EVENT_OBJ$2] = e, _response[DIMENSION$2] = dimension, _response[DISPLACEMENT$2] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        fn.call(this._context, response, new util_js.Path(this.startX, this.startY));
       }
     }
     /**
@@ -969,7 +987,7 @@
       this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       var currentPosition = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
       var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO ? CLOSE$2 : OPEN$2;
+      var nextAction = this.positionOnStart === util_js.ZERO ? CLOSE$2 : OPEN$2;
       var start = this.startX;
       var width = bound.upper || this.width;
       /**
@@ -1021,7 +1039,7 @@
        */
 
       var vdimension = "-" + (resume - virtualStart) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundX = rect.greaterWidth;
 
       if (!this.scrollControlSet) {
@@ -1030,7 +1048,7 @@
       } // OPEN LOGIC
 
 
-      if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) && currentPosition !== ZERO && isBoundX && nextAction === OPEN$2 && this.scrollControl && rect.displacementX < ZERO) {
+      if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) && currentPosition !== util_js.ZERO && isBoundX && nextAction === OPEN$2 && this.scrollControl && rect.displacementX < util_js.ZERO) {
         var _response2;
 
         var response = (_response2 = {}, _response2[EVENT_OBJ$2] = e, _response2[DIMENSION$2] = dimension, _response2.open = true, _response2.close = false, _response2);
@@ -1038,7 +1056,7 @@
       } // CLOSE LOGIC
 
 
-      if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$2 && this.scrollControl && rect.displacementX > ZERO) {
+      if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$2 && this.scrollControl && rect.displacementX > util_js.ZERO) {
         var _response4;
 
         var _response3 = (_response4 = {}, _response4[EVENT_OBJ$2] = e, _response4[DIMENSION$2] = vdimension, _response4.close = true, _response4.open = false, _response4);
@@ -1068,14 +1086,14 @@
       var end = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.endX = end;
       this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startX;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
       var signedOffsetSide = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
       var bound = this.bound;
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO;
+      var zero = "" + util_js.ZERO;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN$2; // release the control for another session
 
@@ -1097,10 +1115,16 @@
         }
 
         return {};
-      } // OPEN LOGIC
+      }
 
+      this.startX = -1;
+      this.startY = -1;
+      this.resumeX = -1;
+      this.resumeY = -1;
+      this.endX = -1;
+      this.endY = -1; // OPEN LOGIC
 
-      if (rect.displacementX < ZERO && (start >= this.minArea || start >= FALSE_WIDTH + signedOffsetSide)) {
+      if (rect.displacementX < util_js.ZERO && (start >= this.minArea || start >= FALSE_WIDTH + signedOffsetSide)) {
         if (offsetSide <= this.width * threshold) {
           thresholdState.state = [THRESHOLD$2, CLOSE$2];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
@@ -1114,7 +1138,7 @@
       } // CLOSE LOGIC
 
 
-      if (rect.displacementX > ZERO && this.resumeX >= FALSE_WIDTH) {
+      if (rect.displacementX > util_js.ZERO && this.resumeX >= FALSE_WIDTH) {
         action = CLOSE$2;
 
         if (offsetSide >= this.width * threshold) {
@@ -1212,7 +1236,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE$3;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = util_js.validateThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -1275,11 +1299,11 @@
       var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - start) + this.unit;
       var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$3) + this.unit;
 
-      if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
+      if (start >= util_js.ZERO && start <= this.maxArea && currentPosition !== util_js.ZERO) {
         var _response;
 
         var response = (_response = {}, _response[EVENT_OBJ$3] = e, _response[DIMENSION$3] = dimension, _response[DISPLACEMENT$3] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        fn.call(this._context, response, new util_js.Path(this.startX, this.startY));
       }
     }
     /**
@@ -1300,7 +1324,7 @@
       this.resumeY = resume;
       var currentPosition = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
       var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO ? CLOSE$3 : OPEN$3;
+      var nextAction = this.positionOnStart === util_js.ZERO ? CLOSE$3 : OPEN$3;
       var start = this.startX;
       var height = bound.upper || this.height;
       /**
@@ -1332,7 +1356,7 @@
        */
 
       var vdimension = "-" + (virtualStart - resume) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundY = rect.greaterHeight;
 
       if (!this.scrollControlSet) {
@@ -1341,7 +1365,7 @@
       } // OPEN LOGIC
 
 
-      if (start >= ZERO && (start <= this.maxArea || start <= height + currentPosition) && currentPosition !== ZERO && isBoundY && nextAction === OPEN$3 && this.scrollControl && rect.displacementY > ZERO) {
+      if (start >= util_js.ZERO && (start <= this.maxArea || start <= height + currentPosition) && currentPosition !== util_js.ZERO && isBoundY && nextAction === OPEN$3 && this.scrollControl && rect.displacementY > util_js.ZERO) {
         var _response2;
 
         var response = (_response2 = {}, _response2[EVENT_OBJ$3] = e, _response2[DIMENSION$3] = dimension, _response2.open = true, _response2.close = false, _response2);
@@ -1349,7 +1373,7 @@
       } // CLOSE LOGIC
 
 
-      if (resume <= this.height && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE$3 && this.scrollControl && rect.displacementY < ZERO) {
+      if (resume <= this.height && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE$3 && this.scrollControl && rect.displacementY < util_js.ZERO) {
         var _response4;
 
         var _response3 = (_response4 = {}, _response4[EVENT_OBJ$3] = e, _response4[DIMENSION$3] = vdimension, _response4.close = true, _response4.open = false, _response4);
@@ -1377,14 +1401,14 @@
       var end = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
       this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
       this.endY = end;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startY;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
       var signedOffsetSide = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
       var bound = this.bound;
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO;
+      var zero = "" + util_js.ZERO;
       var height = bound.upper || this.height;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN$3; // release the control for another session
@@ -1407,10 +1431,16 @@
         }
 
         return {};
-      } // OPEN LOGIC
+      }
 
+      this.startX = -1;
+      this.startY = -1;
+      this.resumeX = -1;
+      this.resumeY = -1;
+      this.endX = -1;
+      this.endY = -1; // OPEN LOGIC
 
-      if (rect.displacementY > ZERO && (start <= this.maxArea || start <= height + signedOffsetSide)) {
+      if (rect.displacementY > util_js.ZERO && (start <= this.maxArea || start <= height + signedOffsetSide)) {
         if (offsetSide <= this.height * threshold) {
           thresholdState.state = [THRESHOLD$3, CLOSE$3];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
@@ -1424,7 +1454,7 @@
       } // CLOSE LOGIC
 
 
-      if (rect.displacementY < ZERO && this.resumeY <= this.height) {
+      if (rect.displacementY < util_js.ZERO && this.resumeY <= this.height) {
         action = CLOSE$3;
 
         if (offsetSide >= this.height * threshold) {
@@ -1460,6 +1490,7 @@
   var START = 'start';
   var MOVE = 'move';
   var END = 'end';
+  var CLASS_TYPE = '[object SnappedDrawer]';
 
   var SnappedDrawer =
   /*#__PURE__*/
@@ -1619,7 +1650,7 @@
     };
 
     _proto.toString = function toString() {
-      return '[object SnappedDrawer]';
+      return CLASS_TYPE;
     };
 
     _proto._processThresholdState = function _processThresholdState(state) {
