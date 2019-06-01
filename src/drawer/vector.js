@@ -4,8 +4,8 @@ import {
 
 export class VectorRectangle extends Rectangle {
   // eslint-disable-next-line no-useless-constructor
-  constructor(x1, y1, x2, y2) {
-    super(x1, y1, x2, y2)
+  constructor(...paths) {
+    super(...paths)
   }
 
   get displacementX() {
