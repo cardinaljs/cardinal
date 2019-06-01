@@ -1,9 +1,48 @@
-import _CircularPath from './circular-path'
-import _Drawer from './drawer'
-import _Nav from './nav'
+import {
+  $,
+  Bound,
+  DIRECTIONS,
+  NAVSTATE_EVENTS,
+  NAV_BOX_SHADOW,
+  Path,
+  ZERO,
+  camelCase,
+  css,
+  dataCamelCase,
+  getAttribute,
+  getData,
+  hasAttribute,
+  setAttribute,
+  unique,
+  validateThreshold
+} from './util'
+import CircularPath from './circular-path'
+import Drawer from './drawer'
+import Nav from './nav'
 
-export default class Cardinal {
-  static CircularPath = _CircularPath
-  static Drawer = _Drawer
-  static Nav = _Nav
+
+const Util = {
+  NAV_BOX_SHADOW,
+  ZERO,
+  DIRECTIONS,
+  NAVSTATE_EVENTS,
+  Path,
+  Bound,
+  dataCamelCase,
+  camelCase,
+  unique,
+  $,
+  getAttribute,
+  hasAttribute,
+  setAttribute,
+  getData,
+  validateThreshold,
+  css
+}
+
+export default {
+  CircularPath,
+  Drawer,
+  Nav,
+  Util
 }
