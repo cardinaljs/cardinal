@@ -28,8 +28,8 @@ const cardinal = {
   Nav: path.resolve(__dirname, '../src/nav/index.js'),
   Drawer: path.resolve(__dirname, '../src/drawer/index.js'),
   CircularPath: path.resolve(__dirname, '../src/circular-path/index.js'),
-  Util: path.resolve(__dirname, '../src/util.js')
-  //Sheets: path.resolve(__dirname, '../src/sheets/index.js')
+  Util: path.resolve(__dirname, '../src/util.js'),
+  Sheet: path.resolve(__dirname, '../src/sheet/index.js')
 }
 const distro = '../dist/standalone/'
 
@@ -45,6 +45,10 @@ function mason(mod) {
   if (mod === 'Nav') {
     external.push(cardinal.Drawer)
     globals[cardinal.Drawer] = 'Drawer'
+  } else if (mod === 'Sheet') {
+    external.push(cardinal.Drawer, cardinal.Nav)
+    globals[cardinal.Drawer] = 'Drawer'
+    globals[cardinal.Nav] = 'Nav'
   }
 
   rollup.rollup({
