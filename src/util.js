@@ -76,7 +76,7 @@ export function camelCase(data, delim = '-') {
   )
 }
 
-export function unique(max) {
+export function unique(max = 1) {
   return Math.floor(Math.random() * max)
 }
 
@@ -96,24 +96,24 @@ export function setAttribute(el, attr, value) {
   el.setAttribute(attr, value)
 }
 
-export function getData(el, attr) {
-  const prop = dataCamelCase(attr)
+export function getData(el, dataName) {
+  const prop = dataCamelCase(dataName)
   // this may return `undefined` in some Safari
   if (el.dataset && el.dataset[prop]) {
     return el.dataset[prop]
   }
-  return getAttribute(el, attr.substring(5))
+  return getAttribute(el, dataName.substring(5))
 }
 
-export function validateThreshold(tsh) {
+export function validateThreshold(threshold) {
   const MAX_THRESHOLD = 1
   const MIN_ILLEGAL_THRESHOLD = 0
-  if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
-    tsh = MAX_THRESHOLD - tsh
-    return tsh
-  } else if (tsh < MIN_ILLEGAL_THRESHOLD) {
-    tsh = MAX_THRESHOLD
-    return tsh
+  if (threshold < MAX_THRESHOLD && threshold > MIN_ILLEGAL_THRESHOLD) {
+    threshold = MAX_THRESHOLD - threshold
+    return threshold
+  } else if (threshold < MIN_ILLEGAL_THRESHOLD) {
+    threshold = MAX_THRESHOLD
+    return threshold
   }
   return MAX_THRESHOLD
 }
@@ -148,7 +148,8 @@ export function css(...args) {
     for (const prop of Object.keys(value)) {
       el.style[prop] = value[prop]
     }
-  } else if (property instanceof Array) {
+    return null
+  } else if (Array.isArray(property)) {
     // return all values of properties in the array for
     // the element as object
     const ostyle = {}
@@ -156,8 +157,8 @@ export function css(...args) {
       ostyle[prop] = STYLEMAP[prop]
     }
     return ostyle
-  } else {
-    // get style from property
+  } else if (typeof property === 'string') {
+    // get value of property
     return STYLEMAP[property]
   }
   return STYLEMAP
