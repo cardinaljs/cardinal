@@ -91,7 +91,11 @@ class NavDrawer {
     const curPos = css(this.element, this.directionString)
       .replace(/[^\d]*$/, '')
     const upperBound = this.elementSize
-    const lowerBound = upperBound + parseInt(curPos, 10)
+    if (this.direction === Drawer.RIGHT) {
+      const lowerBound = window.screen.availWidth - this.element.offsetLeft
+      return new Bound(lowerBound, upperBound)
+    }
+    const lowerBound = this.element.offsetLeft
     return new Bound(lowerBound, upperBound)
   }
 
