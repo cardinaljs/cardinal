@@ -114,7 +114,15 @@ export function getData(el, dataName) {
   return getAttribute(el, dataName.substring(5))
 }
 
-export function validateThreshold(threshold) {
+export function offsetRight(el) {
+  return window.screen.availWidth - el.offsetLeft - el.offsetWidth
+}
+
+export function offsetBottom(el) {
+  return window.screen.availHeight - el.offsetTop - el.offsetHeight
+}
+
+export function resolveThreshold(threshold) {
   const MAX_THRESHOLD = 1
   const MIN_ILLEGAL_THRESHOLD = 0
   if (threshold < MAX_THRESHOLD && threshold > MIN_ILLEGAL_THRESHOLD) {
