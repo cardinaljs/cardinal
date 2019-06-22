@@ -15,6 +15,15 @@ export const NAVSTATE_EVENTS = {
   show: 'show',
   hide: 'hide'
 }
+export const DrawerResponseInterface = {
+  position: 'position',
+  posOnStart: 'posOnStart',
+  dimension: 'dimennsion',
+  displacement: 'displacement',
+  oppositeDimension: 'oppositeDimension',
+  close: 'close',
+  open: 'open'
+}
 
 // classes
 export class Path {
