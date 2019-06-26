@@ -2,11 +2,11 @@
   "name": "cardinal.js",
   "version": "1.0.0",
   "description": "A ",
-  "main": "index.js",
+  "main": "dist/cardinal.js",
   "scripts": {
     "card": "node build/cardinal.build.js",
     "lint": "eslint src/ --no-ignore",
-    "minify": "uglifyjs --compress typeofs=false --mangle --comments \"/^!/\" --sourcemap \"content=dist/cardinal.js.map,includeSources,url=cardinal.min.js.map\" --output dist/cardinal.min.js dist/cardinal.js",
+    "minify": "uglifyjs --compress typeofs=false --mangle --comments \"/^!/\" --source-map \"content=dist/cardinal.js.map,includeSources,url=cardinal.min.js.map\" --output dist/cardinal.min.js dist/cardinal.js",
     "rollup": "rollup --config build/rollup.config.js --sourcemap"
   },
   "repository": {
@@ -36,7 +36,6 @@
     "babel-eslint": "^10.0.1",
     "chai": "^4.2.0",
     "eslint": "^5.16.0",
-    "jest": "^24.8.0",
     "mocha": "^6.1.4",
     "rollup": "^1.6.0",
     "rollup-plugin-babel": "^4.3.2",
