@@ -18,12 +18,13 @@ export const NAVSTATE_EVENTS = {
 export const DrawerResponseInterface = {
   position: 'position',
   posOnStart: 'posOnStart',
-  dimension: 'dimennsion',
+  dimension: 'dimension',
   displacement: 'displacement',
   oppositeDimension: 'oppositeDimension',
-  close: 'close',
-  open: 'open'
+  close: 'closing',
+  open: 'opening'
 }
+export const WINDOW = window
 
 // classes
 export class Path {
@@ -72,6 +73,26 @@ export class Bound {
   }
 }
 
+export class ActivityManager {
+  constructor(activity) {
+    this.activity = activity
+    this.running = false
+    this.id = Date.now()
+  }
+
+  run() {
+    this.running = true
+  }
+
+  derun() {
+    this.running = false
+  }
+
+  isRunning() {
+    return this.running
+  }
+}
+
 // functions
 export function dataCamelCase(data) {
   // remove 'data-' prefix and return camelCase string
@@ -115,11 +136,11 @@ export function getData(el, dataName) {
 }
 
 export function offsetRight(el) {
-  return window.screen.availWidth - el.offsetLeft - el.offsetWidth
+  return WINDOW.screen.availWidth - el.offsetLeft - el.offsetWidth
 }
 
 export function offsetBottom(el) {
-  return window.screen.availHeight - el.offsetTop - el.offsetHeight
+  return WINDOW.screen.availHeight - el.offsetTop - el.offsetHeight
 }
 
 export function resolveThreshold(threshold) {
@@ -151,7 +172,7 @@ export function css(...args) {
   const el = args[0]
   const property = args[1]
   let value = args[2]
-  const STYLEMAP = window.getComputedStyle(el)
+  const STYLEMAP = WINDOW.getComputedStyle(el)
 
   if (typeof property === 'string' && value) {
     // setting one property
