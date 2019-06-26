@@ -3,18 +3,18 @@ import {
   DIRECTIONS,
   NAVSTATE_EVENTS,
   NAV_BOX_SHADOW,
+  WINDOW,
   css,
   getAttribute,
   getData,
   resolveThreshold
 } from './../util'
 import Drawer from './../drawer/'
-import STATE from './state'
 
 const ZERO = 0
 const KILO = 1e3
-const MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.5
-const MIN_POSITIVE_DISPLACEMENT = 5
+const MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.1
+const MIN_POSITIVE_DISPLACEMENT = 15
 const MIN_NEGATIVE_DISPLACEMENT = -MIN_POSITIVE_DISPLACEMENT
 const TRANSITION_STYLE = 'linear'
 const EFFECT = 'transition'
@@ -32,6 +32,11 @@ const THRESHOLD = 'threshold'
 const BELOW_THRESHOLD = `below${THRESHOLD}`
 const MAX_TIME = KILO
 const MAX_SPEED = 500
+const MarkIndex = {
+  high: 'high',
+  mid: 'mid',
+  low: 'low'
+}
 
 class SheetDrawer {
   /**
@@ -39,12 +44,14 @@ class SheetDrawer {
    * Drawer functionality
    * @throws RangeError
    * @param {{}} options An options Object to configure the Drawer with
+   * @param {State} state An activity and service manager
    */
-  constructor(options) {
+  constructor(options, state) {
     this.options = options
+    this.state = state
     this.element = this.options.ELEMENT
     this._body = this.options.BODY
-    this._backdrop = this.options.BACKDROP
+    this.backdrop = this.options.BACKDROP
     this.direction = this.options.DIRECTION
 
     this._checkDirection()
@@ -52,20 +59,24 @@ class SheetDrawer {
     this.directionString = DIRECTIONS[this.direction]
     this.bound = this._bound
     this._oldbound = null
-    this._positionOnStart = null
 
     const o = {
       ...options,
       SIZE: this.elementSize,
       TARGET: document
     }
-    this.drawer = new Drawer.SnappedDrawer(o, this.bound)
+    this.drawer = new Drawer.SnappedDrawer(o, this.bound, Drawer.DrawerManagementStore)
+    Drawer.DrawerManagementStore.pushActivity(this.state.activity)
     this.transition = `${this.directionString} ${TRANS_TEMPLATE}`
-    this.marks = [
-      this.bound.lower,
-      -this.bound.upper * resolveThreshold(options.threshold),
-      -this.bound.upper
-    ]
+    this.marks = {
+      [MarkIndex.high]: ZERO,
+      [MarkIndex.mid]: this.bound.slack * resolveThreshold(options.threshold),
+      [MarkIndex.low]: this.bound.slack
+    }
+    this._Control = {
+      touchMoveExited: false,
+      lastMetredPos: -1
+    }
   }
 
   activate() {
@@ -75,6 +86,7 @@ class SheetDrawer {
       .on(BELOW_THRESHOLD, this._belowThreshold)
       .setContext(this)
       .activate()
+    this.drawer.setServiceID(this.state.activity.id)
     return 0
   }
 
@@ -91,7 +103,7 @@ class SheetDrawer {
     const upperBound = this.elementSize
     if (this.direction === Drawer.DOWN) {
       // get `element.offsetBottom`
-      const lowerBound = window.screen.availHeight - this.element.offsetTop
+      const lowerBound = WINDOW.screen.availHeight - this.element.offsetTop
       return new Bound(lowerBound, upperBound)
     }
     const lowerBound = upperBound + this.element.offsetTop
@@ -100,35 +112,45 @@ class SheetDrawer {
 
   _startHandler(service, response) {
     service.lock()
+    this.state.activity.run()
     css(this.element, {
       [this.directionString]: !this.bound.lower ? response.dimension : null,
       boxShadow: NAV_BOX_SHADOW[this.directionString],
       [EFFECT]: this.transition
     })
     this._body.style.overflow = HIDDEN
-    this._positionOnStart = response.position
   }
 
   _moveHandler(service, response, rectangle) {
     service.lock()
+    const WIN_SIZE = WINDOW.screen.availHeight
     let curPos = rectangle.coordsY.y2
+    if (response.posOnStart === this.marks[MarkIndex.high] && this.element.scrollTop !== ZERO) {
+      this._Control.touchMoveExited = true
+      this._Control.lastMetredPos = curPos
+      return
+    }
+    this._Control.touchMoveExited = false
+    const customDimension = this.direction === Drawer.DOWN ? this._Control.lastMetredPos - curPos + response.posOnStart : -this._Control.lastMetredPos + curPos + response.posOnStart
     css(this.element, {
       [this.directionString]: response.dimension,
       [EFFECT]: 'none',
       [OVERFLOW]: HIDDEN
     })
-    if (this.direction === Drawer.DOWN) {
-      const WIN_SIZE = window.screen.availHeight
-      curPos = WIN_SIZE - curPos
-      this._backdrop.setOpacity(curPos / this.elementSize)
-      return
+    if (response.posOnStart === this.marks[MarkIndex.high] && response.closing) {
+      css(this.element, this.directionString, SheetDrawer._toUnit(customDimension, this.options.unit))
     }
-    this._backdrop.setOpacity(curPos / this.elementSize)
+    if (response.posOnStart === Math.round(this.marks[MarkIndex.mid]) && response.opening) {
+      css(this.element, OVERFLOW, SCROLL)
+    }
+    if (this.direction === Drawer.DOWN) {
+      curPos = WIN_SIZE - curPos
+    }
+    this.backdrop.setOpacity(curPos / this.elementSize)
   }
 
   _threshold(service, state, stateObj) {
     service.lock()
-    console.log('threshold')
     const isOpen = state[1] === 'open'
     const options = {
       stateObj,
@@ -153,70 +175,88 @@ class SheetDrawer {
       stateObj,
       transition: `${this.directionString} ease ${this._calcSpeed(stateObj.TIMING) / KILO}s`
     }
-    let LOGIC
-    if (this.direction === Drawer.UP && isClosed || this.direction === Drawer.DOWN && !isClosed) {
-      LOGIC =  displacement > ZERO && displacement >= MPD && rect.greaterHeight
-    } else {
-      LOGIC = displacement < ZERO && displacement <= MND && rect.greaterHeight
-    }
+    const {
+      position
+    } = options.stateObj
+    const minForwardVelocity = MPD / MTTOB // pixel/second: pps
+    const minBackwardVelocity = MND / MTTOB // pps
+    const velocity = displacement / (overallEventTime / KILO)
+    const LOGIC = this.direction === Drawer.UP && isClosed ||
+    this.direction === Drawer.DOWN && !isClosed
+      ? velocity > minForwardVelocity && rect.greaterHeight
+      : velocity < minBackwardVelocity && rect.greaterHeight
 
-    if (overallEventTime / KILO < MTTOB) {
-      // DIRECTION: Drawer.UP | Drawer.LEFT
-      if (LOGIC) {
-        this._overrideBelowThresh(!isClosed, options)
-      } else {
-        if (isClosed) {
-          // close it back didn't hit thresh. and can't override because not enough velocity or displacement
-          this._hide(options)
-          return
-        }
-        // open it back didn't hit thresh. and can't override because not enough velocity or displacement
-        this._show(options)
-      }
+    if (LOGIC) {
+      this._overrideBelowThresh(!isClosed, options)
+      return
+    }
+    if (isClosed) {
+      this._hidePrep(options)
+      this.element.style[this.directionString] = SheetDrawer._toUnit(
+        position >= this.marks[MarkIndex.mid] ? this.marks[MarkIndex.mid] : this.marks[MarkIndex.low],
+        this.options.unit
+      )
     } else {
-      this.element.style[this.directionString] = this._positionOnStart
-      console.log('no overriding "%s"', this._positionOnStart)
+      this._showPrep(options)
+      this.element.style[this.directionString] = SheetDrawer._toUnit(
+        position >= this.marks[MarkIndex.mid] ? this.marks[MarkIndex.mid] : this.marks[MarkIndex.high],
+        this.options.unit
+      )
     }
   }
 
   _show(options) {
+    if (this._Control.touchMoveExited) {
+      this._Control.touchMoveExited = false
+      return
+    }
     this._showPrep(options)
-    this.element.style[this.directionString] = options.stateObj.dimension
+    this.element.style[this.directionString] = SheetDrawer._toUnit(this.marks[MarkIndex.high], this.options.unit)
   }
 
   _hide(options) {
+    if (this._Control.touchMoveExited) {
+      this._Control.touchMoveExited = false
+      return
+    }
     this._hidePrep(options)
-    this.element.style[this.directionString] = options.stateObj.dimension
+    this.element.style[this.directionString] = SheetDrawer._toUnit(this.marks[MarkIndex.low], this.options.unit)
   }
 
   _overrideBelowThresh(isOpen, options) {
-    console.log('overriding')
     const {
       oppositeDimension,
-      dimension
+      position
     } = options.stateObj
+    const isDownDrawer = this.direction === Drawer.DOWN
     if (isOpen) {
-      this._hidePrep(options)
-      this.element.style[this.directionString] = this._positionOnStart // oppositeDimension
-    } else {
-      // show at most, half of the sheet rather than a whole
-      // only for Drawer.DOWN
-      const isDownDrawer = this.direction === Drawer.DOWN
-      let halfDimension = Math.round(
-        parseInt(
-          dimension.replace(/[^\d]*$/, ''), 10
-        ) * resolveThreshold(this.options.threshold)
+      if (this._Control.touchMoveExited) {
+        this._Control.touchMoveExited = false
+        return
+      }
+      this.element.style[this.directionString] = SheetDrawer._toUnit(
+        position >= this.marks[MarkIndex.mid] ? this.marks[MarkIndex.mid] : this.marks[MarkIndex.low],
+        this.options.unit
       )
-      halfDimension = halfDimension + this.options.unit || 'px'
-      // the remaining half can be further drawn
+      this._halfHidePrep(options)
+    } else {
+      const halfDimension = SheetDrawer._toUnit(this.marks[MarkIndex.mid], this.options.unit)
       this._showPrep(options)
       this.element.style[this.directionString] = isDownDrawer ? halfDimension : oppositeDimension
     }
   }
 
+  _halfHidePrep(options) {
+    this._body.style.overflow = HIDDEN
+    css(this.element, {
+      [EFFECT]: options.transition,
+      [OVERFLOW]: AUTO
+    })
+  }
+
   _hidePrep(options) {
     this._body.style.overflow = SCROLL
-    this._backdrop.hide(this.options.TRANSITION)
+    this.backdrop.hide(this.options.TRANSITION)
     css(this.element, {
       [EFFECT]: options.transition,
       [OVERFLOW]: AUTO
@@ -226,26 +266,26 @@ class SheetDrawer {
     }
     this._setState('close')
     // callback for when nav is hidden
-    if (STATE.event[NAVSTATE_EVENTS.hide]) {
-      STATE.event[NAVSTATE_EVENTS.hide]()
+    if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+      this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)()
     }
   }
 
   _showPrep(options) {
     const buttonHash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR)
     if (buttonHash) {
-      window.location.hash = buttonHash
+      WINDOW.location.hash = buttonHash
     }
-    this._body.style.overflow = HIDDEN
-    this._backdrop.show(this.options.TRANSITION)
+    this._body.style.overflow = options.bodyOverflow || HIDDEN
+    this.backdrop.show(this.options.TRANSITION)
     css(this.element, {
       [EFFECT]: options.transition,
       [OVERFLOW]: AUTO
     })
     this._setState('open')
     // callback for when nav is shown
-    if (STATE.event[NAVSTATE_EVENTS.show]) {
-      STATE.event[NAVSTATE_EVENTS.show]()
+    if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+      this.state.getStateEventHandler(NAVSTATE_EVENTS.show)()
     }
   }
 
@@ -267,22 +307,10 @@ class SheetDrawer {
   _setState(mode) {
     switch (mode) {
       case 'open':
-        STATE.navstate = {
-          alive: true,
-          activity: {
-            service: this,
-            action: mode
-          }
-        }
+        this.state.activity.run()
         break
       case 'close':
-        STATE.navstate = {
-          alive: false,
-          activity: {
-            service: this,
-            action: mode
-          }
-        }
+        this.state.activity.derun()
         break
       default:
         throw new Error('this should never happen')
@@ -293,6 +321,10 @@ class SheetDrawer {
     const bound = this._bound
     this._oldbound = new Bound(this.bound.lower, this.bound.upper)
     this.bound.lower = bound.lower
+  }
+
+  static _toUnit(value, unit = 'px') {
+    return value + unit
   }
 }
 
