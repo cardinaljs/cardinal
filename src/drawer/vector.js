@@ -16,7 +16,7 @@ export class VectorRectangle extends Rectangle {
     return this.coordsY.y2 - this.coordsY.y1
   }
 
-  get diagonalLength() {
+  get resultant() {
     if (!this.displacementY) {
       return this.displacementX
     } else if (!this.displacementX) {
