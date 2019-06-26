@@ -2,34 +2,36 @@ import Bottom from './bottom'
 import Left from './left'
 import Right from './right'
 import Top from './top'
+import {
+  WINDOW
+} from '../../util'
 
 const BELOW_THRESHOLD = 'belowthreshold'
 const THRESHOLD = 'threshold'
 const START = 'start'
 const MOVE = 'move'
 const END = 'end'
+const CLASS_TYPE = '[object SnappedDrawer]'
 
 export default class SnappedDrawer {
   /**
    * @param {{}} options an object of configuration options
    * @param {Bound} bound a boundary object
+   * @param {{}} drawerManager an object that helps manage drawers
+   * especially when more than one drawer service is running
    */
-  constructor(options, bound) {
+  constructor(options, bound, drawerManager) {
     this._options = options
-    /**
-     * @type {HTMLElement}
-     */
+    this._drawerManager = drawerManager
     this._element = options.ELEMENT
     this._target = options.TARGET
-    this.events = ['touchstart', 'touchmove', 'touchend']
     this._handlers = null
     this._direction = options.DIRECTION
     this._callibration = null
-    /**
-     * @type {{}}
-     */
     this._callbacks = null
     this._context = this
+    this._id = 0
+    this.events = ['touchstart', 'touchmove', 'touchend']
 
     this._setCalibration(this._direction, bound)
   }
@@ -54,29 +56,28 @@ export default class SnappedDrawer {
     const movefn = this._callbacks ? this._callbacks[MOVE] : def
     const endfn = this._callbacks ? this._callbacks[END] : def
 
-    const startHandler = (e) => {
-      if (this._direction !== null) {
-        this._callibration.start(e, startfn)
-      } else {
-        this.deactivate()
+    const startHandler = (touchEvent) => {
+      const activity = this._drawerManager.getRunningActivity()
+      if (this._callibration &&
+        (this._id && activity && activity.id === this._id ||
+          !activity && this._isCoolSignal(this._getSignal(touchEvent)))) {
+        this._callibration.start(touchEvent, startfn)
       }
     }
 
-    const moveHandler = (e) => {
-      if (this._direction !== null) {
-        this._callibration.move(e, movefn)
-      } else {
-        this.deactivate()
+    const moveHandler = (touchEvent) => {
+      const activity = this._drawerManager.getRunningActivity()
+      if (this._callibration && activity && activity.id === this._id) {
+        this._callibration.move(touchEvent, movefn)
       }
     }
 
-    const endHandler = (e) => {
-      if (this._direction !== null) {
+    const endHandler = (touchEvent) => {
+      const activity = this._drawerManager.getRunningActivity()
+      if (this._callibration && activity && activity.id === this._id) {
         const state = {}
-        this._callibration.end(e, endfn, state) // state by Ref
+        this._callibration.end(touchEvent, endfn, state) // state by Ref
         this._processThresholdState(state)
-      } else {
-        this.deactivate()
       }
     }
 
@@ -98,7 +99,7 @@ export default class SnappedDrawer {
   }
 
   /**
-   * A function used to register callbacks for the `Drawer class` `touchstart`,
+   * A method used to register callbacks for the `Drawer class` `touchstart`,
    * `touchmove` and `touchend` event handlers.
    *
    * Always call `Drawer.on(...)` before `Drawer.activate()`.
@@ -152,18 +153,30 @@ export default class SnappedDrawer {
     return this
   }
 
+  setServiceID(id) {
+    if (typeof id !== 'number') {
+      throw new TypeError('expected `id` to be a unique number')
+    }
+    this._id = id
+  }
+
   toString() {
-    return '[object SnappedDrawer]'
+    return CLASS_TYPE
   }
 
   _processThresholdState(state) {
     if (Object.keys(state).length < 1) {
       return
     }
-    const thState = state.state[0]
-    const vector = state.stateObj.rect
-    delete state.stateObj.rect
-    this._callbacks[thState].call(this._context, state.state, state.stateObj, vector)
+    const {
+      state: stateArray,
+      stateObj,
+      service
+    } = state
+    const {
+      rect
+    } = stateObj
+    this._callbacks[stateArray[0]].call(this._context, service, stateArray, stateObj, rect)
   }
 
   _setCalibration(point, bound) {
@@ -182,6 +195,33 @@ export default class SnappedDrawer {
         break
       default:
         throw RangeError('Direction out of range')
+    }
+  }
+
+  _isCoolSignal(signal) {
+    const size = this._direction === SnappedDrawer.UP || this._direction === SnappedDrawer.DOWN ? WINDOW.screen.availHeight : WINDOW.screen.availWidth
+    switch (this._direction) {
+      case SnappedDrawer.UP:
+      case SnappedDrawer.LEFT:
+        return signal <= size / 2
+      case SnappedDrawer.RIGHT:
+      case SnappedDrawer.DOWN:
+        return signal > size / 2
+      default:
+        return false
+    }
+  }
+
+  _getSignal(emitter) {
+    switch (this._direction) {
+      case SnappedDrawer.UP:
+      case SnappedDrawer.DOWN:
+        return emitter.changedTouches[0].clientY
+      case SnappedDrawer.LEFT:
+      case SnappedDrawer.RIGHT:
+        return emitter.changedTouches[0].clientX
+      default:
+        return null
     }
   }
 
