@@ -1,18 +1,21 @@
 import {
+  NAVSTATE_EVENTS,
   NAV_BOX_SHADOW,
+  WINDOW,
   ZERO,
   css,
-  getAttribute
+  getAttribute,
+  getData
 } from './../util'
-import STATE from './state'
 
 const TRANSITION_STYLE = 'ease'
 const EFFECT = 'transition'
 const TRANS_END = 'transitionend'
 
 class NavService {
-  constructor(options) {
+  constructor(options, state) {
     this.options = options
+    this.state = state
     this.nav = options.ELEMENT
     this.button = options.INIT_ELEM
     this.backdrop = options.BACKDROP
@@ -28,7 +31,7 @@ class NavService {
     /**
      * @private
      */
-    this._closeClicked = false
+    this._closeInvoked = false
     /**
      * @readonly
      * @private
@@ -38,16 +41,16 @@ class NavService {
   }
 
   activate() {
-    const ClickHandler = (e) => {
-      this.handler(e)
+    const ClickHandler = (mouseEvent) => {
+      this.handler(mouseEvent)
     }
     const BackdropHandler = () => {
       this._close()
     }
     const TransitionHandler = () => {
-      if (!this.alive && this._closeClicked) {
+      if (!this.alive && this._closeInvoked) {
         this._cleanShadow()
-        this._closeClicked = false
+        this._closeInvoked = false
       }
     }
     this._register({
@@ -65,7 +68,7 @@ class NavService {
   }
 
   deactivate() {
-    throw new ReferenceError('cannot deactivate API specified as default. This service must be kept running')
+    throw new ReferenceError('cannot deactivate a default service. This service must be kept running')
   }
 
   forceDeactivate() {
@@ -77,11 +80,14 @@ class NavService {
     this._register(null)
   }
 
-  handler(e) {
-    e.preventDefault()
-    window.location.hash = getAttribute(this.button, 'href')
+  handler(mouseEvent) {
+    mouseEvent.preventDefault()
     const state = NavService._toNum(NavService.css(this.nav, this.direction))
     if (state < ZERO) {
+      const buttonHash = getAttribute(this.button, 'href') || getData(this.button, 'data-href')
+      if (buttonHash) {
+        WINDOW.location.hash = buttonHash
+      }
       this._open()
     } else {
       this._close()
@@ -114,15 +120,12 @@ class NavService {
     }
     NavService.css(this.nav, style)
     this.backdrop.show(this.options.TRANSITION)
-    this.alive = true
-    const state = {
-      alive: this.alive,
-      activity: {
-        service: this,
-        action: 'open'
-      }
+    // callback for when nav is shown
+    if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+      this.state.getStateEventHandler(NAVSTATE_EVENTS.show)()
     }
-    STATE.navstate = state
+    this.alive = true
+    this.state.activity.run()
   }
 
   _close() {
@@ -134,16 +137,13 @@ class NavService {
     }
     NavService.css(this.nav, style)
     this.backdrop.hide(this.options.TRANSITION)
-    this.alive = false
-    this._closeClicked = true
-    const state = {
-      alive: this.alive,
-      activity: {
-        service: this,
-        action: 'close'
-      }
+    // callback for when nav is hidden
+    if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+      this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)()
     }
-    STATE.navstate = state
+    this.alive = false
+    this._closeInvoked = true
+    this.state.activity.derun()
   }
 
   _cleanShadow() {

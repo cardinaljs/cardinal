@@ -1,28 +1,28 @@
 import {
   $,
+  ActivityManager,
   DIRECTIONS,
+  NAVSTATE_EVENTS,
+  WINDOW,
   css,
-  getAttribute,
-  getData,
-  hasAttribute,
-  setAttribute,
-  unique
+  getData
 } from './../util'
 import {
   Backdrop
 } from './backdrop'
-import HashState from './hashstate'
 import NavDrawer from './drawer'
 import NavService from './navservice'
+import PopService from './popservice'
+import State from './state'
 
 const BACKDROP = 'backdrop'
-const DEF_CLASSNAME = 'cardinal-navcard'
-const MEDIA_HASH = 'data-hash-max-width'
-const MEDIA_DRAW = 'data-draw-max-width'
-const _CLASS = 'class'
+const MEDIA_DRAW = 'data-max-width'
+const CLASS_TYPE = '[object NavCard]'
+const NAME = 'Nav'
+const NAV = WINDOW[NAME] || null
 
 class NavCard {
-  constructor() {
+  constructor(src, dest) {
     /**
      * Covert Backdrop
      * ----------------
@@ -46,42 +46,45 @@ class NavCard {
       top: 0,
       left: 0
     })
-
+    this.src = src
+    this.dest = dest
     this.body = document.body
     this.Drawer = null
-    this.NavService = null
-    this.HashState = null
+    this.SheetService = null
+    this.PopService = null
+    this._Activity = new ActivityManager(this)
+    this.State = new State(this._Activity)
   }
 
   static defaultConfig = {
     transition: 500,
-    direction: 'left',
-    backdrop: false,
-    backdropClass: null,
-    accessAttr: 'data-target',
+    direction: -1,
+    useBackdrop: false,
+    backdrop: null,
+    dest: null,
     maxStartArea: 25,
     threshold: 1 / 2,
     unit: 'px'
   }
 
   static SERVICES = {
-    Default: 2,
-    Drawer: 4,
-    Hash: 8
+    Default: 0x20,
+    Drawer: 0x40,
+    Pop: 0x80
   }
 
-  setup(el, options) {
-    if (!el) {
-      throw new TypeError('expected \'el\' to be selector string or HTMLElement')
+  setup(options) {
+    if (!this.src) {
+      throw new TypeError(
+        `expected ${NAME} to be constructed with at least 'src' argument:
+        expected 'src' to be selector string or HTMLElement.
+          constructor(src: string | HTMLElement, dest?: string | HTMLElement)`
+      )
     }
-    let {
-      backdrop,
-      HASH_NAV_MAX_WIDTH,
-      NAV_DRAW_MAX_WIDTH,
-      destinationId,
-      destination
-    } = 1
-    const opts = NavCard.defaultConfig
+
+    const opts = typeof Object.assign === 'function' ? Object.assign({}, NavCard.defaultConfig) : {
+      ...NavCard.defaultConfig
+    }
 
     if (options && typeof options === 'object') {
       for (const prop of Object.keys(options)) {
@@ -93,89 +96,85 @@ class NavCard {
       }
     }
 
-    const dataAccess = opts.accessAttr
+    this.dest = this.dest ? this.dest : opts.dest
 
-    /**
-     * Initialization element e.g <button ...</button>
-     */
-    const element = el instanceof HTMLElement ? el : $(el)
-    destinationId = getData(element, dataAccess)
+    const srcEl = this.src instanceof HTMLElement ? this.src : $(this.src)
+    const destEl = this.dest instanceof HTMLElement ? this.dest : $(this.dest)
+    let maxWidth  = getData(destEl, MEDIA_DRAW)
 
-    // check if the data-* attribute value is a valid css selector
-    // if not prepend a '#' to it as id selector is default
-    const isCSSSelector = /^(?:#|\.|\u005b[^\u005c]\u005c)/.test(destinationId)
-    const isClass = /^\./.test(destinationId)
-    destinationId = isCSSSelector ? destinationId : `#${destinationId}`
-
-    destination = $(destinationId)
-
-    // we want a class too, so in case we've got an id selector
-    // find the classname or assign a unique class
-    const defaultClass = `${DEF_CLASSNAME}-${unique(2 << 7)}`
-    // eslint-disable-next-line no-nested-ternary
-    let classname = isClass ? destinationId : hasAttribute(destination, _CLASS)
-      ? getAttribute(destination, _CLASS) : (setAttribute(destination, _CLASS, defaultClass), defaultClass)
-    const classlist = classname.split(/\s+/)
-    // eslint-disable-next-line prefer-template
-    classname = '.' + (classlist.length >= 2 ? classlist[0] + '.' + classlist[1] : classname)
-    destination = isClass ? destination : $(classname)
-
-    if (opts.backdrop) {
-      const backdropclass = opts.backdropClass || false
-      // if `opts.backdrop` and no `backdropclass` given
-      // append our custom backdrop
+    if (opts.useBackdrop) {
+      const backdropclass = opts.backdrop || false
+      // if `opts.useBackdrop` and no `backdrop` given
+      // append a custom backdrop
       if (!backdropclass) {
-        destination.insertAdjacentElement('beforeBegin', this.backdrop)
-      }
-
-      if (typeof backdropclass === 'string') {
+        destEl.insertAdjacentElement('beforeBegin', this.backdrop)
+      } else if (typeof backdropclass === 'string') {
         // check if backdropclass is normal string or css class selector
-        backdrop =  /^\./.test(backdropclass) ? backdropclass : `.${backdropclass}`
+        const backdrop =  /^\./.test(backdropclass) ? backdropclass : `.${backdropclass}`
         this.backdrop = $(backdrop)
+      } else if (backdropclass instanceof HTMLElement) {
+        this.backdrop = backdropclass
+      } else {
+        throw new TypeError('expected \'options.backdrop\' to be a selector string or HTMLElement.')
       }
     }
 
-    HASH_NAV_MAX_WIDTH = getData(destination, MEDIA_HASH)
-    NAV_DRAW_MAX_WIDTH = getData(destination, MEDIA_DRAW)
-    HASH_NAV_MAX_WIDTH = /px$/.test(HASH_NAV_MAX_WIDTH) ? HASH_NAV_MAX_WIDTH : `${HASH_NAV_MAX_WIDTH}px`
-    NAV_DRAW_MAX_WIDTH = /px$/.test(NAV_DRAW_MAX_WIDTH) ? NAV_DRAW_MAX_WIDTH : `${NAV_DRAW_MAX_WIDTH}px`
-
+    maxWidth = /px$/.test(maxWidth) ? maxWidth : `${maxWidth}px`
     const defaultOptions = {
-      ELEMENT: destination,
-      INIT_ELEM: element,
+      ELEMENT: destEl,
+      INIT_ELEM: srcEl,
       BACKDROP: new Backdrop(this.backdrop),
       BODY: this.body,
       TRANSITION: opts.transition,
       DIRECTION: DIRECTIONS[opts.direction],
-      unit: options.unit
+      unit: opts.unit
     }
     const drawerOptions = {
       ...defaultOptions,
-      MAX_WIDTH: NAV_DRAW_MAX_WIDTH,
+      MAX_WIDTH: maxWidth,
       DIRECTION: opts.direction,
       maxStartArea: opts.maxStartArea,
       threshold: opts.threshold
     }
     const hashOptions = {
-      ...defaultOptions,
-      MAX_WIDTH: HASH_NAV_MAX_WIDTH
+      INIT_ELEM: defaultOptions.INIT_ELEM
     }
 
-    return new NavMountWorker(Object.assign({}, {
-      defaultOptions
-    }, {
-      drawerOptions
-    }, {
+    return new NavMountWorker({
+      defaultOptions,
+      drawerOptions,
       hashOptions
-    }))
+    })
+  }
+
+  terminate(service) {
+    service |= 0
+    if (service & NavCard.SERVICES.Default && this.SheetService instanceof NavService) {
+      this.SheetService.deactivate()
+    }
+    if (service & NavCard.SERVICES.Drawer && this.Drawer instanceof NavDrawer) {
+      this.Drawer.deactivate()
+    }
+    if (service & NavCard.SERVICES.Hash && this.PopService instanceof PopService) {
+      this.PopService.deactivate()
+    }
+    if (!service) {
+      throw new Error('a service id is required')
+    }
   }
 
   toString() {
-    return '[object NavCard]'
+    return CLASS_TYPE
+  }
+
+  static namespace(name) {
+    WINDOW[name] = WINDOW[name] || {}
+    WINDOW[name][NAME] = NavCard
+    WINDOW[NAME] = NAV
   }
 
   _drawerAPI(options) {
-    this.Drawer = new NavDrawer(options)
+    this.Drawer = new NavDrawer(options, this.State)
     return {
       activate: () => this.Drawer.activate(),
       deactivate: () => this.Drawer.deactivate()
@@ -183,41 +182,18 @@ class NavCard {
   }
 
   _hashAPI(options) {
-    this.HashState = new HashState(this.NavService, options)
+    this.PopService = new PopService(this.SheetService, options, this.State)
     return {
-      activate: () => this.HashState.activate(),
-      deactivate: () => this.HashState.deactivate()
+      activate: () => this.PopService.activate(),
+      deactivate: () => this.PopService.deactivate()
     }
   }
 
   _defaultAPI(options) {
-    this.NavService = new NavService(options)
+    this.SheetService = new NavService(options, this.State)
     return {
-      activate: () => this.NavService.activate(),
-      deactivate: () => this.NavService.deactivate()
-    }
-  }
-
-  terminate(service) {
-    // this._*API(null).deactivate()
-    switch (service) {
-      case NavCard.SERVICES.Default:
-        if (this.NavService instanceof NavService) {
-          this.NavService.deactivate()
-        }
-        break
-      case NavCard.SERVICES.Drawer:
-        if (this.Drawer instanceof NavDrawer) {
-          this.Drawer.deactivate()
-        }
-        break
-      case NavCard.SERVICES.Hash:
-        if (this.HashState instanceof HashState) {
-          this.HashState.deactivate()
-        }
-        break
-      default:
-        throw new Error('a service id is required')
+      activate: () => this.SheetService.activate(),
+      deactivate: () => this.SheetService.deactivate()
     }
   }
 }
@@ -229,15 +205,45 @@ class NavMountWorker extends NavCard {
   }
 
   mount() {
-    this._defaultAPI(this.options.defaultOptions).activate()
-    this._drawerAPI(this.options.drawerOptions).activate()
-    this._hashAPI(this.options.hashOptions).activate()
+    const DEFAULT_ACTIVE = !this._defaultAPI(this.options.defaultOptions).activate()
+    const DRAWER_ACTIVE = !this._drawerAPI(this.options.drawerOptions).activate()
+    const HASH_ACTIVE = !this._hashAPI(this.options.hashOptions).activate()
+    return new Promise((resolve, reject) => {
+      if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
+        reject(new Error('one or more services could not activate'))
+        return
+      }
+      resolve(new NavStateEvent(this.State))
+    })
   }
 
   unmount() {
-    this.NavService.forceDeactivate()
+    this.SheetService.forceDeactivate()
     this.Drawer.deactivate()
-    this.HashState.deactivate()
+    this.PopService.deactivate()
+  }
+
+  toString() {
+    return '[object NavMountWorker]'
+  }
+}
+
+class NavStateEvent {
+  events = [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide]
+  constructor(state) {
+    this._State = state
+  }
+  on(event, handle) {
+    if (!(this.events.indexOf(event) + 1)) {
+      throw new Error(`unknown event '${event}'`)
+    }
+    this._State[`on${event}`] = handle
+  }
+  off(event) {
+    if (!(this.events.indexOf(event) + 1)) {
+      throw new Error(`unknown event '${event}'`)
+    }
+    this._State[`on${event}`] = null
   }
 }
 

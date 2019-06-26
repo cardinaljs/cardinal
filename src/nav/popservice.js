@@ -1,12 +1,13 @@
 import {
+  WINDOW,
   getAttribute,
   getData
 } from '../util'
-import STATE from './state'
 
 class PopService {
-  constructor(parentService, options) {
+  constructor(parentService, options, state) {
     this.options = options
+    this.state = state
     this.parentService = parentService
     this.button = options.INIT_ELEM
     this.event = 'hashchange'
@@ -18,12 +19,12 @@ class PopService {
       this._hashchange(hashChangeEvent)
     }
     this._register(handler)
-    window.addEventListener(this.event, this.handler, true)
+    WINDOW.addEventListener(this.event, this.handler, true)
     return 0
   }
 
   deactivate() {
-    window.removeEventListener(this.event, this.handler, true)
+    WINDOW.removeEventListener(this.event, this.handler, true)
     this._register(null)
     return 0
   }
@@ -36,7 +37,7 @@ class PopService {
     const oldHash = PopService._getHash(hashChangeEvent.oldURL)
     if (oldHash === (getAttribute(this.button, 'href') ||
     getData(this.button, 'data-href')) &&
-    STATE.navstate && STATE.navstate.alive) {
+    this.state.activity.isRunning()) {
       hashChangeEvent.stopImmediatePropagation()
       this.parentService._close()
     }

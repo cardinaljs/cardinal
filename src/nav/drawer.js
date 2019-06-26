@@ -3,12 +3,12 @@ import {
   DIRECTIONS,
   NAVSTATE_EVENTS,
   NAV_BOX_SHADOW,
+  WINDOW,
   css,
   getAttribute,
   getData
 } from './../util'
 import Drawer from './../drawer/'
-import STATE from './state'
 
 const ZERO = 0
 const KILO = 1e3
@@ -39,9 +39,11 @@ class NavDrawer {
    * Support for Top and Bottom may come in the future
    * @throws RangeError
    * @param {{}} options An options Object to configure the Drawer with
+   * @param {{}} state An activity and service manager
    */
-  constructor(options) {
+  constructor(options, state) {
     this.options = options
+    this.state = state
     this.element = this.options.ELEMENT
     this._body = this.options.BODY
     this._backdrop = this.options.BACKDROP
@@ -57,7 +59,8 @@ class NavDrawer {
       SIZE: this.elementSize,
       TARGET: document
     }
-    this.drawer = new Drawer.SnappedDrawer(o, this.bound)
+    this.drawer = new Drawer.SnappedDrawer(o, this.bound, Drawer.DrawerManagementStore)
+    Drawer.DrawerManagementStore.pushActivity(this.state.activity)
     this.transition = `${this.directionString} ${TRANS_TEMPLATE}`
   }
 
@@ -68,6 +71,7 @@ class NavDrawer {
       .on(BELOW_THRESHOLD, this._belowThreshold)
       .setContext(this)
       .activate()
+    this.drawer.setServiceID(this.state.activity.id)
     return 0
   }
 
@@ -88,18 +92,18 @@ class NavDrawer {
    * @returns {Bound} a boundary object: Bound
    */
   get _bound() {
-    const curPos = css(this.element, this.directionString)
-      .replace(/[^\d]*$/, '')
     const upperBound = this.elementSize
     if (this.direction === Drawer.RIGHT) {
-      const lowerBound = window.screen.availWidth - this.element.offsetLeft
+      const lowerBound = WINDOW.screen.availWidth - this.element.offsetLeft
       return new Bound(lowerBound, upperBound)
     }
-    const lowerBound = this.element.offsetLeft
+    const lowerBound = upperBound + this.element.offsetLeft
     return new Bound(lowerBound, upperBound)
   }
 
-  _startHandler(response) {
+  _startHandler(service, response) {
+    service.lock()
+    this.state.activity.run()
     css(this.element, {
       [this.directionString]: response.dimension,
       boxShadow: NAV_BOX_SHADOW[this.directionString],
@@ -108,7 +112,8 @@ class NavDrawer {
     this._body.style.overflow = HIDDEN
   }
 
-  _moveHandler(response, rectangle) {
+  _moveHandler(service, response, rectangle) {
+    service.lock()
     let curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2
     css(this.element, {
       [this.directionString]: response.dimension,
@@ -116,7 +121,7 @@ class NavDrawer {
       [OVERFLOW]: HIDDEN
     })
     if (this.direction === Drawer.RIGHT) {
-      const WIN_SIZE = window.screen.availWidth
+      const WIN_SIZE = WINDOW.screen.availWidth
       curPos = WIN_SIZE - curPos
       this._backdrop.setOpacity(curPos / this.elementSize)
       return
@@ -124,7 +129,8 @@ class NavDrawer {
     this._backdrop.setOpacity(curPos / this.elementSize)
   }
 
-  _threshold(state, stateObj) {
+  _threshold(service, state, stateObj) {
+    service.lock()
     const isOpen = state[1] === 'open'
     const options = {
       stateObj,
@@ -137,7 +143,8 @@ class NavDrawer {
     }
   }
 
-  _belowThreshold(state, stateObj, rect) {
+  _belowThreshold(service, state, stateObj, rect) {
+    service.lock()
     const isClosed = state[1] !== 'open'
     const overallEventTime = stateObj.TIMING
     const MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD
@@ -157,25 +164,24 @@ class NavDrawer {
     }
 
     if (overallEventTime / KILO < MTTOB) {
-      // DIRECTION: Drawer.UP | Drawer.LEFT
       if (LOGIC) {
         this._overrideBelowThresh(!isClosed, options)
       } else {
         if (isClosed) {
-          // close it back didn't hit thresh. and can't override
+          // Close it. Can't override
           this._hide(options)
           return
         }
-        // open it back didn't hit thresh. and can't override because not enough displacement
+        // Open it. Can't override. Not enough displacement
         this._show(options)
       }
     } else {
       if (isClosed) {
-        // close it back didn't hit thresh. and can't override because not enough velocity or displacement
+        // close it
         this._hide(options)
         return
       }
-      // open it back didn't hit thresh. and can't override because not enough velocity or displacement
+      // open it
       this._show(options)
     }
   }
@@ -201,6 +207,7 @@ class NavDrawer {
   }
 
   _hidePrep(options) {
+    this.state.activity.derun()
     this._body.style.overflow = SCROLL
     this._backdrop.hide(this.options.TRANSITION)
     css(this.element, {
@@ -212,15 +219,15 @@ class NavDrawer {
     }
     this._setState('close')
     // callback for when nav is hidden
-    if (STATE.event[NAVSTATE_EVENTS.hide]) {
-      STATE.event[NAVSTATE_EVENTS.hide]()
+    if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+      this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)()
     }
   }
 
   _showPrep(options) {
     const buttonHash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR)
     if (buttonHash) {
-      window.location.hash = buttonHash
+      WINDOW.location.hash = buttonHash
     }
     this._body.style.overflow = HIDDEN
     this._backdrop.show(this.options.TRANSITION)
@@ -230,8 +237,8 @@ class NavDrawer {
     })
     this._setState('open')
     // callback for when nav is shown
-    if (STATE.event[NAVSTATE_EVENTS.show]) {
-      STATE.event[NAVSTATE_EVENTS.show]()
+    if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+      this.state.getStateEventHandler(NAVSTATE_EVENTS.show)()
     }
   }
 
@@ -253,22 +260,10 @@ class NavDrawer {
   _setState(mode) {
     switch (mode) {
       case 'open':
-        STATE.navstate = {
-          alive: true,
-          activity: {
-            service: this,
-            action: mode
-          }
-        }
+        this.state.activity.run()
         break
       case 'close':
-        STATE.navstate = {
-          alive: false,
-          activity: {
-            service: this,
-            action: mode
-          }
-        }
+        this.state.activity.derun()
         break
       default:
         throw new Error('this should never happen')
