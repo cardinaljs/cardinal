@@ -30,11 +30,19 @@ export class Rectangle {
 
   // getter
   get width() {
-    return Math.abs(this.displacementX)
+    return Math.abs(this.coordsX.x2 - this.coordsX.x1)
   }
 
   get height() {
-    return Math.abs(this.displacementY)
+    return Math.abs(this.coordsY.y2 - this.coordsY.y1)
+  }
+
+  get perimeter() {
+    return 2 * (this.width + this.height)
+  }
+
+  get area() {
+    return this.width * this.height
   }
 
   get greaterWidth() {
