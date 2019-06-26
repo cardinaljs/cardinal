@@ -12,13 +12,14 @@ import {
   getAttribute,
   getData,
   hasAttribute,
+  resolveThreshold,
   setAttribute,
-  unique,
-  validateThreshold
+  unique
 } from './util'
 import CircularPath from './circular-path'
 import Drawer from './drawer'
 import Nav from './nav'
+import Sheet from './sheet'
 
 
 const Util = {
@@ -36,7 +37,7 @@ const Util = {
   hasAttribute,
   setAttribute,
   getData,
-  validateThreshold,
+  resolveThreshold,
   css
 }
 
@@ -44,5 +45,6 @@ export default {
   CircularPath,
   Drawer,
   Nav,
+  Sheet,
   Util
 }
