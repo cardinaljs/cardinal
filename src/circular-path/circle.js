@@ -1,13 +1,9 @@
 export const POINT_ANGLE = 360
-export const HALF = 1 / 2
 export const PI = Math.PI
-export const RAD = PI / (POINT_ANGLE * HALF)
+export const RAD = PI / (POINT_ANGLE >> 1)
 
 export class Circle {
   constructor(radius) {
-    /**
-     * @type {number}
-     */
     this.radius = radius
     this.diameter = this.radius * 2
   }
@@ -25,7 +21,7 @@ export class Circle {
     return angle / POINT_ANGLE * this.area
   }
 
-  lenOfSect(angle) {
+  arc(angle) {
     angle *= RAD
     return angle / POINT_ANGLE * this.circumference
   }
