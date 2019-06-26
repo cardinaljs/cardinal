@@ -1,16 +1,18 @@
 import {
+  Bound,
+  DrawerResponseInterface as DRI,
   Path,
+  WINDOW,
   ZERO,
-  validateThreshold
+  resolveThreshold
 } from './../../util'
+import {
+  Service
+} from './../service'
 import {
   VectorRectangle
 } from './../vector'
 
-const DIRECTION = 'left'
-const DIMENSION = 'dimension'
-const DISPLACEMENT = 'displacement'
-const EVENT_OBJ = 'event'
 const THRESHOLD = 'threshold'
 const BELOW_THRESHOLD = 'belowthreshold'
 const OPEN = 'open'
@@ -62,7 +64,7 @@ export default class Left {
      * @type {number}
      */
     this.threshold = this.options.threshold || THRESHOLD_VALUE
-    this.threshold = validateThreshold(this.threshold)
+    this.threshold = resolveThreshold(this.threshold)
 
     // Touch coordinates (Touch Start)
     this.startX = -1
@@ -100,64 +102,57 @@ export default class Left {
 
   /**
    * The `touchstart` event handler for the `Left` drawer `class`
-   * @param {TouchEvent} e an event `object`: An event `object`
+   * @param {TouchEvent} touchEvent an event `object`: An event `object`
    * representing an `object` of all `properties` related
    * to the `touchstart` event.
    * @param {Function} fn - a callback function called when the `start`
    * event is triggered
    * @returns {void}
    */
-  start(e, fn) {
+  start(touchEvent, fn) {
     this.timing.start = new Date()
-    const start = e.changedTouches[0].pageX || e.changedTouches[0].clientX
+    this._updateOrientation()
+    const start = touchEvent.changedTouches[0].clientX
     this.startX = start
-    this.startY =  e.changedTouches[0].pageY || e.changedTouches[0].clientY
+    this.startY = touchEvent.changedTouches[0].clientY
     /**
      * The `Drawer`'s `Left` class uses the `CSS property`, `left`
      * for updating and defining position of the drawn element
      */
-    const currentPosition = parseFloat(
-      Left._getStyle(this.element)[DIRECTION].replace(
-        /[^\d]*$/, ''
-      )
-    )
+    const currentPosition = this.element.offsetLeft
     const bound = this.bound
     this.positionOnStart = currentPosition
     const dimension = bound.lower ? `-${bound.upper - bound.lower}${this.unit}` : `-${bound.upper - start}${this.unit}`
     const displacement = `-${bound.upper - FALSE_TOUCH_START_POINT}${this.unit}`
 
-    if (start >= ZERO && start <= this.maxArea && currentPosition !== ZERO) {
+    if (start >= ZERO && start <= this.maxArea && currentPosition === bound.slack) {
       const response = {
-        [EVENT_OBJ]: e,
-        [DIMENSION]: dimension,
-        [DISPLACEMENT]: displacement
+        [DRI.position]: currentPosition,
+        [DRI.dimension]: dimension,
+        [DRI.displacement]: displacement
       }
-      fn.call(this._context, response, new Path(this.startX, this.startY))
+      fn.call(this._context, new Service(touchEvent), response, new Path(this.startX, this.startY))
     }
   }
 
   /**
    * The `touchmove` event handler for the `Left` drawer `class`
-   * @param {TouchEvent} e an event `object`: An event `object`
+   * @param {TouchEvent} touchEvent an event `object`: An event `object`
    * representing an `object` of all `properties` related
    * to the `touchmove` event.
    * @param {Function} fn - a callback function called when the `move`
    * event is triggered
    * @returns {void}
    */
-  move(e, fn) {
+  move(touchEvent, fn) {
     /* eslint complexity: ["error", 25] */
-    const resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX
+    const resume = touchEvent.changedTouches[0].clientX
     this.resumeX = resume
-    this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
+    this.resumeY = touchEvent.changedTouches[0].clientY
 
-    const currentPosition = parseFloat(
-      Left._getStyle(this.element)[DIRECTION].replace(
-        /[^\d]*$/, ''
-      )
-    )
+    const currentPosition = this.element.offsetLeft
     const bound = this.bound
-    const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
+    // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
     const start = this.startX
     const width = bound.upper || this.width
     /**
@@ -174,7 +169,9 @@ export default class Left {
      * reading from `resume` is subtracted from the `width` to
      * get the accurate position to update the drawer with.
      */
-    const dimension = `-${width - resume}${this.unit}`
+
+    const dimension = `${-start + resume + this.positionOnStart}${this.unit}`
+    // const dimension = `-${width - bound.lower - resume}${this.unit}`
     /**
      * Dimension for closing. When the drawer is being closed,
      * the `width` is the max dimension and the `start` could
@@ -185,7 +182,7 @@ export default class Left {
      * or the actual `start`. If the actual start is more than
      * `width`, the width becomes the start point else the `start`
      */
-    const vdimension = `-${virtualStart - resume}${this.unit}`
+    const vdimension = `-${virtualStart - resume - this.positionOnStart}${this.unit}`
     const rect = new VectorRectangle(
       this.startX,
       this.startY,
@@ -201,33 +198,35 @@ export default class Left {
 
     // OPEN LOGIC
     if (start >= ZERO && (start <= this.maxArea || start <= width + currentPosition) &&
-    currentPosition !== ZERO && isBoundX && nextAction === OPEN &&
+    currentPosition < ZERO && isBoundX &&/* nextAction === CLOSE &&*/
     this.scrollControl && rect.displacementX > ZERO) {
       const response = {
-        [EVENT_OBJ]: e,
-        [DIMENSION]: dimension,
-        open: true,
-        close: false
+        [DRI.position]: currentPosition,
+        [DRI.posOnStart]: this.positionOnStart,
+        [DRI.dimension]: dimension,
+        [DRI.open]: true,
+        [DRI.close]: false
       }
-      fn.call(this._context, response, rect)
+      fn.call(this._context, new Service(touchEvent), response, rect)
     }
 
     // CLOSE LOGIC
     if (resume <= width && Math.abs(currentPosition) < width - bound.lower &&
-    isBoundX && nextAction === CLOSE && this.scrollControl && rect.displacementX < ZERO) {
+    isBoundX &&/* nextAction === CLOSE &&*/ this.scrollControl && rect.displacementX < ZERO) {
       const response = {
-        [EVENT_OBJ]: e,
-        [DIMENSION]: vdimension,
-        close: true,
-        open: false
+        [DRI.position]: currentPosition,
+        [DRI.posOnStart]: this.positionOnStart,
+        [DRI.dimension]: vdimension,
+        [DRI.close]: true,
+        [DRI.open]: false
       }
-      fn.call(this._context, response, rect)
+      fn.call(this._context, new Service(touchEvent), response, rect)
     }
   }
 
   /**
    * The `touchend` event handler for the `Left` drawer `class`
-   * @param {TouchEvent} e an event `object`: An event `object`
+   * @param {TouchEvent} touchEvent an event `object`: An event `object`
    * representing an `object` of all `properties` related
    * to the `touchend` event.
    * @param {Function} fn - a callback function called when the `end`
@@ -236,24 +235,21 @@ export default class Left {
    * by reference for updating by this method
    * @returns {void}
    */
-  end(e, fn, thresholdState) {
+  end(touchEvent, fn, thresholdState) {
     this.timing.end = new Date()
 
-    const end = e.changedTouches[0].pageX || e.changedTouches[0].clientX
+    const end = touchEvent.changedTouches[0].clientX
     this.endX = end
-    this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY
+    this.endY = touchEvent.changedTouches[0].clientY
 
     const rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY)
 
     const start = this.startX
     const TIMING = this.timing.end.getTime() - this.timing.start.getTime()
     const threshold = this.threshold
-    const signedOffsetSide = parseFloat(
-      Left._getStyle(this.element)[DIRECTION].replace(
-        /[^\d]*$/, ''
-      )
-    )
+    const signedOffsetSide = this.element.offsetLeft
     const bound = this.bound
+    const customBound = new Bound(bound.upper + this.positionOnStart, bound.upper)
     const nonZero = `${bound.slack}${this.unit}`
     const zero = `${ZERO}`
     const width = bound.upper || this.width
@@ -263,60 +259,55 @@ export default class Left {
     this.scrollControl = this.scrollControlSet = false // eslint-disable-line no-multi-assign
 
     const response = {
-      [EVENT_OBJ]: e,
-      position: signedOffsetSide,
+      [DRI.position]: signedOffsetSide,
+      [DRI.posOnStart]: this.positionOnStart,
       rect
     }
 
     function getResponse(state, trueForOpen) {
-      const opposite = 'oppositeDimension'
       if (state === THRESHOLD && trueForOpen || state === BELOW_THRESHOLD && !trueForOpen) {
         return {
-          [DIMENSION]: zero,
+          [DRI.dimension]: zero,
           TIMING,
-          [opposite]: nonZero,
+          [DRI.oppositeDimension]: nonZero,
           ...response
         }
       } else if (state === THRESHOLD && !trueForOpen || state === BELOW_THRESHOLD && trueForOpen) {
         return {
-          [DIMENSION]: nonZero,
+          [DRI.dimension]: nonZero,
           TIMING,
-          [opposite]: zero,
+          [DRI.oppositeDimension]: zero,
           ...response
         }
       }
       return {}
     }
-    this.startX = -1
-    this.startY = -1
-    this.resumeX = -1
-    this.resumeY = -1
-    this.endX = -1
-    this.endY = -1
 
     // OPEN LOGIC
     if (rect.displacementX > ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
-      if (offsetSide <= this.width * threshold) {
+      if (rect.width >= customBound.gap * resolveThreshold(threshold)) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
       } else {
         thresholdState.state = [BELOW_THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
       }
+      thresholdState.service = new Service(touchEvent)
       fn.call(this, action)
       return
     }
 
     // CLOSE LOGIC
-    if (rect.displacementX < ZERO && this.resumeX <= this.width) {
+    if (rect.displacementX < ZERO && this.resumeX <= width) {
       action = CLOSE
-      if (offsetSide >= this.width * threshold) {
+      if (offsetSide >= width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
         thresholdState.stateObj = getResponse(thresholdState.state[0], false)
       } else {
         thresholdState.state = [BELOW_THRESHOLD, OPEN]
         thresholdState.stateObj = getResponse(thresholdState.state[0], false)
       }
+      thresholdState.service = new Service(touchEvent)
       fn.call(this, action)
     }
   }
@@ -327,10 +318,17 @@ export default class Left {
   }
 
   static _getStyle(elt, pseudoElt) {
-    return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt)
+    return pseudoElt ? WINDOW.getComputedStyle(elt, pseudoElt) : WINDOW.getComputedStyle(elt)
   }
 
   static _windowSize() {
-    return window.screen.availWidth
+    return WINDOW.screen.availWidth
+  }
+
+  // window size is not need here; at least not yet
+  // the major purpose of this is to update bound dependents
+  _updateOrientation() {
+    this.winSize = typeof this._winSize === 'function' ? this._winSize() : Left._windowSize()
+    this.minArea = this.bound.lower || this.options.maxStartArea || MAX_START_AREA
   }
 }
