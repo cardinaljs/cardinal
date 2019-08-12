@@ -62,9 +62,11 @@ class NavCard {
     useBackdrop: false,
     backdrop: null,
     dest: null,
+    scrollableContainer: null,
     maxStartArea: 25,
     threshold: 1 / 2,
-    unit: 'px'
+    unit: 'px',
+    CustomDrawer: null
   }
 
   static SERVICES = {
@@ -134,13 +136,15 @@ class NavCard {
       MAX_WIDTH: maxWidth,
       DIRECTION: opts.direction,
       maxStartArea: opts.maxStartArea,
-      threshold: opts.threshold
+      threshold: opts.threshold,
+      scrollableContainer: opts.scrollableContainer,
+      CustomDrawer: opts.CustomDrawer
     }
     const hashOptions = {
       INIT_ELEM: defaultOptions.INIT_ELEM
     }
 
-    return new NavMountWorker({
+    return new NavMountWorker(this, {
       defaultOptions,
       drawerOptions,
       hashOptions
@@ -174,7 +178,10 @@ class NavCard {
   }
 
   _drawerAPI(options) {
-    this.Drawer = new NavDrawer(options, this.State)
+    const {
+      CustomDrawer: Drawer
+    } = options
+    this.Drawer = Drawer && typeof Drawer === 'object' ? new Drawer(options, this.State) : new NavDrawer(options, this.State)
     return {
       activate: () => this.Drawer.activate(),
       deactivate: () => this.Drawer.deactivate()
@@ -198,29 +205,29 @@ class NavCard {
   }
 }
 
-class NavMountWorker extends NavCard {
-  constructor(options) {
-    super()
+class NavMountWorker {
+  constructor(borrowedContext, options) {
+    this.$this = borrowedContext
     this.options = options
   }
 
   mount() {
-    const DEFAULT_ACTIVE = !this._defaultAPI(this.options.defaultOptions).activate()
-    const DRAWER_ACTIVE = !this._drawerAPI(this.options.drawerOptions).activate()
-    const HASH_ACTIVE = !this._hashAPI(this.options.hashOptions).activate()
+    const DEFAULT_ACTIVE = !this.$this._defaultAPI(this.options.defaultOptions).activate()
+    const DRAWER_ACTIVE = !this.$this._drawerAPI(this.options.drawerOptions).activate()
+    const HASH_ACTIVE = !this.$this._hashAPI(this.options.hashOptions).activate()
     return new Promise((resolve, reject) => {
       if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
         reject(new Error('one or more services could not activate'))
         return
       }
-      resolve(new NavStateEvent(this.State))
+      resolve(new NavStateEvent(this.$this, this.$this.State))
     })
   }
 
   unmount() {
-    this.SheetService.forceDeactivate()
-    this.Drawer.deactivate()
-    this.PopService.deactivate()
+    this.$this.SheetService.forceDeactivate()
+    this.$this.Drawer.deactivate()
+    this.$this.PopService.deactivate()
   }
 
   toString() {
@@ -230,14 +237,15 @@ class NavMountWorker extends NavCard {
 
 class NavStateEvent {
   events = [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide]
-  constructor(state) {
+  constructor($this, state) {
+    this.$this = $this
     this._State = state
   }
-  on(event, handle) {
+  on(event, handle = () => false) {
     if (!(this.events.indexOf(event) + 1)) {
       throw new Error(`unknown event '${event}'`)
     }
-    this._State[`on${event}`] = handle
+    this._State[`on${event}`] = handle.bind(this.$this)
   }
   off(event) {
     if (!(this.events.indexOf(event) + 1)) {
