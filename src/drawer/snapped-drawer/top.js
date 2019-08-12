@@ -200,7 +200,7 @@ export default class Top {
 
     // OPEN LOGIC
     if (start >= ZERO && (start <= this.maxArea || start <= height + currentPosition) &&
-    currentPosition < ZERO && isBoundY &&/* nextAction === CLOSE &&*/
+    currentPosition < ZERO && rect.width < bound.gap && isBoundY &&
     this.scrollControl && rect.displacementY > ZERO) {
       const response = {
         [DRI.position]: currentPosition,
@@ -213,8 +213,8 @@ export default class Top {
     }
 
     // CLOSE LOGIC
-    if (resume <= this.height && Math.abs(currentPosition) < height - bound.lower &&
-    isBoundY &&/* nextAction === CLOSE &&*/ this.scrollControl && rect.displacementY < ZERO) {
+    if (resume <= this.height && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap &&
+    isBoundY && this.scrollControl && rect.displacementY < ZERO) {
       const response = {
         [DRI.position]: currentPosition,
         [DRI.posOnStart]: this.positionOnStart,
@@ -286,7 +286,7 @@ export default class Top {
     }
 
     // OPEN LOGIC
-    if (rect.displacementY > ZERO && (start <= this.maxArea || start <= height + signedOffsetSide)) {
+    if (rect.displacementY >= ZERO && (start <= this.maxArea || start <= height + signedOffsetSide)) {
       if (rect.height >= customBound.gap * resolveThreshold(threshold)) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
@@ -300,7 +300,7 @@ export default class Top {
     }
 
     // CLOSE LOGIC
-    if (rect.displacementY < ZERO && this.resumeY <= height) {
+    if (rect.displacementY <= ZERO && this.resumeY <= height) {
       action = CLOSE
       if (offsetSide >= height * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -324,7 +324,7 @@ export default class Top {
   }
 
   static _windowSize() {
-    return WINDOW.screen.availHeight
+    return WINDOW.screen.height
   }
 
   // window size is not need here; at least not yet

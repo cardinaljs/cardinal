@@ -158,7 +158,7 @@ export default class Bottom {
     // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
 
     const start = this.startY
-    const height = bound.upper || this.height
+    // const height = bound.upper || this.height
     /**
      * When the touch doesn't start from the max-height
      * of the element ignore `start` and use `height`
@@ -195,7 +195,7 @@ export default class Bottom {
 
     // OPEN LOGIC
     if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT - currentPosition) &&
-    currentPosition < ZERO && isBoundY &&
+    currentPosition < ZERO && rect.width < bound.gap && isBoundY &&
     this.scrollControl && rect.displacementY < ZERO) {
       const response = {
         [DRI.position]: currentPosition,
@@ -208,7 +208,7 @@ export default class Bottom {
     }
 
     // CLOSE LOGIC
-    if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower &&
+    if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap &&
     isBoundY && this.scrollControl && rect.displacementY > ZERO) {
       const response = {
         [DRI.position]: currentPosition,
@@ -282,7 +282,7 @@ export default class Bottom {
     }
 
     // OPEN LOGIC
-    if (rect.displacementY < ZERO && (start >= this.minArea || start >= FALSE_HEIGHT - signedOffsetSide)) {
+    if (rect.displacementY <= ZERO && (start >= this.minArea || start >= FALSE_HEIGHT - signedOffsetSide)) {
       /**
        * Threshold resolution is done here to get the original
        * set value of the threshold before the first resolution
@@ -305,7 +305,7 @@ export default class Bottom {
     }
 
     // CLOSE LOGIC
-    if (rect.displacementY > ZERO && this.resumeY >= FALSE_HEIGHT) {
+    if (rect.displacementY >= ZERO && this.resumeY >= FALSE_HEIGHT) {
       action = CLOSE
       if (offsetSide >= height * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -329,7 +329,7 @@ export default class Bottom {
   }
 
   static _windowSize() {
-    return WINDOW.screen.availHeight
+    return WINDOW.screen.height
   }
 
   // no need for `window.onorientationchange`

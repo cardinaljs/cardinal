@@ -198,7 +198,7 @@ export default class Left {
 
     // OPEN LOGIC
     if (start >= ZERO && (start <= this.maxArea || start <= width + currentPosition) &&
-    currentPosition < ZERO && isBoundX &&/* nextAction === CLOSE &&*/
+    currentPosition < ZERO && rect.width < bound.gap && isBoundX &&
     this.scrollControl && rect.displacementX > ZERO) {
       const response = {
         [DRI.position]: currentPosition,
@@ -211,8 +211,8 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (resume <= width && Math.abs(currentPosition) < width - bound.lower &&
-    isBoundX &&/* nextAction === CLOSE &&*/ this.scrollControl && rect.displacementX < ZERO) {
+    if (resume <= width && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap &&
+    isBoundX && this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [DRI.position]: currentPosition,
         [DRI.posOnStart]: this.positionOnStart,
@@ -284,7 +284,7 @@ export default class Left {
     }
 
     // OPEN LOGIC
-    if (rect.displacementX > ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
+    if (rect.displacementX >= ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
       if (rect.width >= customBound.gap * resolveThreshold(threshold)) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
@@ -298,7 +298,7 @@ export default class Left {
     }
 
     // CLOSE LOGIC
-    if (rect.displacementX < ZERO && this.resumeX <= width) {
+    if (rect.displacementX <= ZERO && this.resumeX <= width) {
       action = CLOSE
       if (offsetSide >= width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -322,10 +322,10 @@ export default class Left {
   }
 
   static _windowSize() {
-    return WINDOW.screen.availWidth
+    return WINDOW.screen.width
   }
 
-  // window size is not need here; at least not yet
+  // window size is not needed here; at least not yet
   // the major purpose of this is to update bound dependents
   _updateOrientation() {
     this.winSize = typeof this._winSize === 'function' ? this._winSize() : Left._windowSize()

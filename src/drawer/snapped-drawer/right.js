@@ -158,7 +158,7 @@ export default class Right {
     // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
 
     const start = this.startX
-    const width = bound.upper || this.width
+    // const width = bound.upper || this.width
     /**
      * When the touch doesn't start from the max-width
      * of the element ignore `start` and use `width`
@@ -195,7 +195,7 @@ export default class Right {
 
     // OPEN LOGIC
     if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH - currentPosition) &&
-    currentPosition < ZERO && isBoundX &&/* nextAction === OPEN &&*/
+    currentPosition < ZERO && rect.width < bound.gap && isBoundX &&
     this.scrollControl && rect.displacementX < ZERO) {
       const response = {
         [DRI.position]: currentPosition,
@@ -208,8 +208,8 @@ export default class Right {
     }
 
     // CLOSE LOGIC
-    if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower &&
-    isBoundX &&/* nextAction === CLOSE &&*/ this.scrollControl && rect.displacementX > ZERO) {
+    if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap &&
+    isBoundX && this.scrollControl && rect.displacementX > ZERO) {
       const response = {
         [DRI.position]: currentPosition,
         [DRI.posOnStart]: this.positionOnStart,
@@ -282,7 +282,7 @@ export default class Right {
     }
 
     // OPEN LOGIC
-    if (rect.displacementX < ZERO && (start >= this.minArea || start >= FALSE_WIDTH - signedOffsetSide)) {
+    if (rect.displacementX <= ZERO && (start >= this.minArea || start >= FALSE_WIDTH - signedOffsetSide)) {
       if (rect.width >= customBound.gap * resolveThreshold(threshold)) {
         thresholdState.state = [THRESHOLD, CLOSE]
         thresholdState.stateObj = getResponse(thresholdState.state[0], true)
@@ -296,7 +296,7 @@ export default class Right {
     }
 
     // CLOSE LOGIC
-    if (rect.displacementX > ZERO && this.resumeX >= FALSE_WIDTH) {
+    if (rect.displacementX >= ZERO && this.resumeX >= FALSE_WIDTH) {
       action = CLOSE
       if (offsetSide >= width * threshold) {
         thresholdState.state = [THRESHOLD, OPEN]
@@ -320,7 +320,7 @@ export default class Right {
   }
 
   static _windowSize() {
-    return WINDOW.screen.availWidth
+    return WINDOW.screen.width
   }
 
   // no need for `window.onorientationchange`
