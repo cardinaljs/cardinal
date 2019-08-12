@@ -6,7 +6,6 @@ import {
   Path
 } from '../util'
 
-const ZERO = 0
 const DEG = 1 / RAD
 /**
  * Enum of all quadrants from first to fourth.
@@ -54,19 +53,10 @@ export default class CircularPath extends Circle {
   }
 
   _findPath(angle) {
-    const DEG_ANGLE = this._radToDeg(angle)
-    if (DEG_ANGLE === Quadrant.FIRST || DEG_ANGLE === ZERO) {
-      return [this.radius, ZERO]
-    } else if (DEG_ANGLE === Quadrant.SECOND) {
-      return [ZERO, this.radius]
-    } else if (DEG_ANGLE === Quadrant.THIRD) {
-      return [-this.radius, ZERO]
-    } else if (DEG_ANGLE === Quadrant.FOURTH) {
-      return [ZERO, -this.radius]
-    }
     // const quad = this.getQuadrant(DEG_ANGLE)
     return [
-      this.radius * Math.cos(angle), this.radius * Math.sin(angle)
+      parseFloat((this.radius * Math.cos(angle)).toFixed(3)),
+      parseFloat((this.radius * Math.sin(angle)).toFixed(3))
     ]
   }
 
