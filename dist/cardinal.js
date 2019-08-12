@@ -1,3 +1,18 @@
+/*!
+  * Cardinal v1.0.0
+  * Repository: https://github.com/cardinaljs/cardinal
+  * Copyright 2019 Caleb Pitan. All rights reserved.
+  * Build Date: 2019-08-12T00:27:29.657Z
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  * http://www.apache.org/licenses/LICENSE-2.0
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -59,227 +74,6 @@
     subClass.__proto__ = superClass;
   }
 
-  var POINT_ANGLE = 360;
-  var HALF = 1 / 2;
-  var PI = Math.PI;
-  var RAD = PI / (POINT_ANGLE * HALF);
-  var Circle =
-  /*#__PURE__*/
-  function () {
-    function Circle(radius) {
-      /**
-       * @type {number}
-       */
-      this.radius = radius;
-      this.diameter = this.radius * 2;
-    }
-
-    var _proto = Circle.prototype;
-
-    _proto.areaOfSect = function areaOfSect(angle) {
-      angle *= RAD;
-      return angle / POINT_ANGLE * this.area;
-    };
-
-    _proto.lenOfSect = function lenOfSect(angle) {
-      angle *= RAD;
-      return angle / POINT_ANGLE * this.circumference;
-    };
-
-    _createClass(Circle, [{
-      key: "area",
-      get: function get() {
-        return PI * Math.pow(this.radius, 2);
-      }
-    }, {
-      key: "circumference",
-      get: function get() {
-        return 2 * PI * this.radius;
-      }
-    }]);
-
-    return Circle;
-  }();
-
-  var ZERO = 0;
-  var DEG = 1 / RAD;
-  var RIGHT_ANGLE = POINT_ANGLE >> 2;
-  /**
-   * Enum of all quadrants from first to fourth.
-   * The quadrant is not a usual one; it starts from the 12th
-   * hand of the clock and moves anti-clockwise
-   * @enum {number}
-   * @const
-   */
-
-  var Quadrant = {
-    FIRST: 90,
-    SECOND: 180,
-    THIRD: 270,
-    FOURTH: 360 // There are two Triangles formed 1) Right angle 2) issoceles
-
-  };
-
-  var CircularPath =
-  /*#__PURE__*/
-  function (_Circle) {
-    _inheritsLoose(CircularPath, _Circle);
-
-    function CircularPath(radius, angles) {
-      var _this;
-
-      _this = _Circle.call(this, radius) || this;
-      _this._angles = angles;
-      _this.angles = angles.map(function (value) {
-        return RAD * value;
-      });
-      _this._quad = null;
-      return _this;
-    }
-
-    var _proto = CircularPath.prototype;
-
-    // private
-    _proto._degToRad = function _degToRad(deg) {
-      return RAD * deg;
-    };
-
-    _proto._radToDeg = function _radToDeg(rad) {
-      return DEG * rad;
-    };
-
-    _proto._findOppUseSOH = function _findOppUseSOH(angle, hyp) {
-      return Math.sin(angle) * hyp;
-    };
-
-    _proto._firstPath = function _firstPath() {
-      var _this2 = this;
-
-      var paths = [];
-
-      this._angles.forEach(function (angle) {
-        if (angle === ZERO || angle <= POINT_ANGLE && angle % RIGHT_ANGLE === ZERO) {
-          paths.push(_this2.radius);
-          return;
-        }
-
-        _this2._quad = _this2._getQuadrant(angle);
-        angle = _this2._quad !== Quadrant.FIRST ? _this2._quad - angle : angle;
-
-        var radAngle = _this2._degToRad(angle);
-
-        var hyp = _this2._chordLength(radAngle); // RAT: Right Angle Triangle
-        // These are the angles of a RAT that overlaps the circle
-        // with its hypotenuse being the chord that closes the
-        // inner "cut" triangle
-        // angleAofRAT = 90 or what else do you think.
-
-
-        var angleCofRAT = _this2._getLastTwoEqAngles(radAngle);
-
-        var angleBofRAT = RIGHT_ANGLE - angleCofRAT; // what would be the path is the `opp` side with respect
-        // to `angleBofRAT` i.e the line that faces it.
-
-        paths.push(_this2._findOppUseSOH(_this2._degToRad(angleBofRAT), hyp));
-      });
-
-      return paths;
-    };
-
-    _proto._resolvePath = function _resolvePath(val, quadrant) {
-      var _this3 = this;
-
-      var paths = [];
-
-      this._angles.forEach(function (angle) {
-        if (angle === ZERO || angle <= POINT_ANGLE && angle % RIGHT_ANGLE === ZERO) {
-          paths.push(_this3.radius);
-          return;
-        }
-
-        _this3._quad = _this3._getQuadrant(angle);
-        angle = _this3._quad !== Quadrant.FIRST ? _this3._quad - angle : angle;
-
-        var radAngle = _this3._degToRad(angle);
-
-        var hyp = _this3._chordLength(radAngle); // RAT: Right Angle Triangle
-        // These are the angles of a RAT that overlaps the circle
-        // with its hypotenuse being the chord that closes the
-        // inner "cut" triangle
-        // angleAofRAT = 90 or what else do you think.
-
-
-        var angleCofRAT = _this3._getLastTwoEqAngles(radAngle);
-
-        var angleBofRAT = RIGHT_ANGLE - angleCofRAT; // what would be the path is the `opp` side with respect
-        // to `angleBofRAT` i.e the line that faces it.
-
-        paths.push(_this3._findOppUseSOH(_this3._degToRad(angleBofRAT), hyp));
-      });
-
-      return paths;
-    }
-    /**
-     * Finds the value of the last two equal angles in the
-     * triangle cut out of the circle.
-     * There are three angles, one is given as `angleA`;
-     * the other two are equal since two sides `b` & `c` are
-     * equal i.e `b = c = radius`
-     *
-     * @param {number} angleA an angle in degree of the only unequal
-     * part of the triangle
-     * @returns {number} an angle in degree that reps the angle of the
-     * two equal sides of the triangle
-     */
-    ;
-
-    _proto._getLastTwoEqAngles = function _getLastTwoEqAngles(angleA) {
-      return (POINT_ANGLE * HALF - this._radToDeg(angleA)) * HALF;
-    };
-
-    _proto._getQuadrant = function _getQuadrant(angle) {
-      if (angle <= Quadrant.FIRST) {
-        return Quadrant.FIRST;
-      } else if (angle <= Quadrant.SECOND && angle > Quadrant.FIRST) {
-        return Quadrant.SECOND;
-      } else if (angle <= Quadrant.THIRD && angle > Quadrant.SECOND) {
-        return Quadrant.THIRD;
-      } else if (angle <= Quadrant.FOURTH && angle > Quadrant.THIRD) {
-        return Quadrant.FOURTH;
-      }
-
-      throw RangeError('Quadrant out of range');
-    };
-
-    _proto._chordLength = function _chordLength(angle) {
-      var radiusSq = Math.pow(this.radius, 2);
-      /**
-       * cosine rule [`a**2 = b**2 + c**2 - 2bc cos A`]
-       *
-       * `2 * radiusSq` stands as `b**2 + c**2`.
-       * Therefore `b**2 + c**2 = 2bc` since `b = c = radius`.
-       * Where `b` & `c` are two sides of a triangle cut
-       * from the circle, enclosed with a chord, with the `theta`
-       * joining them equal `angle`
-       *
-       * `angle` is the angle `theta` between the two radii
-       * drawn from the centre of the circle
-       */
-      // a = a**2
-
-      var a = 2 * radiusSq - 2 * radiusSq * Math.cos(angle);
-      a = Math.sqrt(a);
-      return a;
-    };
-
-    _createClass(CircularPath, [{
-      key: "path",
-      get: function get() {}
-    }]);
-
-    return CircularPath;
-  }(Circle);
-
   // constants
   var BLUR_SPREAD_SHADE = '0.7rem 0 rgba(0,0,0,.3)';
   var NAV_BOX_SHADOW = {
@@ -288,8 +82,59 @@
     bottom: "0 -0.2rem " + BLUR_SPREAD_SHADE,
     right: "-0.2rem 0 " + BLUR_SPREAD_SHADE
   };
-  var ZERO$1 = 0;
-  var DIRECTIONS = ['top', 'left', 'bottom', 'right']; // classes
+  var ZERO = 0;
+  var DIRECTIONS = ['top', 'left', 'bottom', 'right'];
+  var NAVSTATE_EVENTS = {
+    show: 'show',
+    hide: 'hide'
+  };
+  var DrawerResponseInterface = {
+    position: 'position',
+    posOnStart: 'posOnStart',
+    dimension: 'dimension',
+    displacement: 'displacement',
+    oppositeDimension: 'oppositeDimension',
+    close: 'closing',
+    open: 'opening'
+  };
+  var WINDOW = window; // classes
+
+  var Path =
+  /*#__PURE__*/
+  function () {
+    function Path(x, y) {
+      this.x = x;
+      this.y = y;
+    }
+    /**
+     * Get difference between two paths
+     * @param {Path} path1 Path Object
+     * @param {Path} path2 Path Object
+     * @returns {Path} A different Path
+     */
+
+
+    Path.pathDifference = function pathDifference(path1, path2) {
+      var x = path1.x - path2.x;
+      var y = path1.y - path2.y;
+      return new Path(x, y);
+    }
+    /**
+     * Join two different paths
+     * @param {Path} path1 Path Object
+     * @param {Path} path2 Path Object
+     * @returns {Path} A joined Path
+     */
+    ;
+
+    Path.join = function join(path1, path2) {
+      var x = path1.x + path2.x;
+      var y = path1.y + path2.y;
+      return new Path(x, y);
+    };
+
+    return Path;
+  }();
   var Bound =
   /*#__PURE__*/
   function () {
@@ -311,6 +156,31 @@
     }]);
 
     return Bound;
+  }();
+  var ActivityManager =
+  /*#__PURE__*/
+  function () {
+    function ActivityManager(activity) {
+      this.activity = activity;
+      this.running = false;
+      this.id = Date.now();
+    }
+
+    var _proto = ActivityManager.prototype;
+
+    _proto.run = function run() {
+      this.running = true;
+    };
+
+    _proto.derun = function derun() {
+      this.running = false;
+    };
+
+    _proto.isRunning = function isRunning() {
+      return this.running;
+    };
+
+    return ActivityManager;
   }(); // functions
 
   function dataCamelCase(data) {
@@ -328,6 +198,10 @@
     });
   }
   function unique(max) {
+    if (max === void 0) {
+      max = 1;
+    }
+
     return Math.floor(Math.random() * max);
   }
   function $(query) {
@@ -342,25 +216,31 @@
   function setAttribute(el, attr, value) {
     el.setAttribute(attr, value);
   }
-  function getData(el, attr) {
-    var prop = dataCamelCase(attr); // this may return `undefined` in some Safari
+  function getData(el, dataName) {
+    var prop = dataCamelCase(dataName); // this may return `undefined` in some Safari
 
     if (el.dataset && el.dataset[prop]) {
       return el.dataset[prop];
     }
 
-    return getAttribute(el, attr);
+    return getAttribute(el, dataName.substring(5));
   }
-  function validateThreshold(tsh) {
+  function offsetRight(el) {
+    return WINDOW.screen.width - el.offsetLeft - el.offsetWidth;
+  }
+  function offsetBottom(el) {
+    return WINDOW.screen.height - el.offsetTop - el.offsetHeight;
+  }
+  function resolveThreshold(threshold) {
     var MAX_THRESHOLD = 1;
     var MIN_ILLEGAL_THRESHOLD = 0;
 
-    if (tsh < MAX_THRESHOLD && tsh > MIN_ILLEGAL_THRESHOLD) {
-      tsh = MAX_THRESHOLD - tsh;
-      return tsh;
-    } else if (tsh < MIN_ILLEGAL_THRESHOLD) {
-      tsh = MAX_THRESHOLD;
-      return tsh;
+    if (threshold < MAX_THRESHOLD && threshold > MIN_ILLEGAL_THRESHOLD) {
+      threshold = MAX_THRESHOLD - threshold;
+      return threshold;
+    } else if (threshold < MIN_ILLEGAL_THRESHOLD) {
+      threshold = MAX_THRESHOLD;
+      return threshold;
     }
 
     return MAX_THRESHOLD;
@@ -383,7 +263,7 @@
     var el = arguments.length <= 0 ? undefined : arguments[0];
     var property = arguments.length <= 1 ? undefined : arguments[1];
     var value = arguments.length <= 2 ? undefined : arguments[2];
-    var STYLEMAP = window.getComputedStyle(el);
+    var STYLEMAP = WINDOW.getComputedStyle(el);
 
     if (typeof property === 'string' && value) {
       // setting one property
@@ -402,7 +282,9 @@
         var prop = _arr[_i];
         el.style[prop] = value[prop];
       }
-    } else if (property instanceof Array) {
+
+      return null;
+    } else if (Array.isArray(property)) {
       // return all values of properties in the array for
       // the element as object
       var ostyle = {};
@@ -424,74 +306,222 @@
       }
 
       return ostyle;
-    } else {
-      // get style from property
+    } else if (typeof property === 'string') {
+      // get value of property
       return STYLEMAP[property];
     }
 
     return STYLEMAP;
   }
 
-  var VectorRectangle =
+  var POINT_ANGLE = 360;
+  var PI = Math.PI;
+  var RAD = PI / (POINT_ANGLE >> 1);
+  var Circle =
   /*#__PURE__*/
   function () {
-    function VectorRectangle(x1, y1, x2, y2) {
-      this.coordsX = {
-        x1: x1,
-        x2: x2
-      };
-      this.coordsY = {
-        y1: y1,
-        y2: y2
-      };
+    function Circle(radius) {
+      this.radius = radius;
+      this.diameter = this.radius * 2;
     }
 
-    _createClass(VectorRectangle, [{
-      key: "displacementX",
-      get: function get() {
-        return this.coordsX.x2 - this.coordsX.x1;
-      }
-    }, {
-      key: "displacementY",
-      get: function get() {
-        return this.coordsY.y2 - this.coordsY.y1;
-      }
-    }, {
-      key: "diagonalLength",
-      get: function get() {
-        if (!this.displacementY) {
-          return this.displacementX;
-        } else if (!this.displacementX) {
-          return this.displacementY;
-        }
+    var _proto = Circle.prototype;
 
-        return Math.sqrt(Math.pow(this.displacementY, 2) + Math.pow(this.displacementX, 2));
+    _proto.areaOfSect = function areaOfSect(angle) {
+      angle *= RAD;
+      return angle / POINT_ANGLE * this.area;
+    };
+
+    _proto.arc = function arc(angle) {
+      angle *= RAD;
+      return angle / POINT_ANGLE * this.circumference;
+    };
+
+    _createClass(Circle, [{
+      key: "area",
+      get: function get() {
+        return PI * Math.pow(this.radius, 2);
+      }
+    }, {
+      key: "circumference",
+      get: function get() {
+        return 2 * PI * this.radius;
       }
     }]);
 
-    return VectorRectangle;
+    return Circle;
+  }();
+
+  var DEG = 1 / RAD;
+  /**
+   * Enum of all quadrants from first to fourth.
+   * The quadrant is not a usual one; it starts from the 12th
+   * hand of the clock and moves anti-clockwise
+   * @enum {number}
+   * @const
+   */
+
+  var Quadrant = {
+    FIRST: 360,
+    SECOND: 90,
+    THIRD: 180,
+    FOURTH: 270
+  };
+
+  var CircularPath =
+  /*#__PURE__*/
+  function (_Circle) {
+    _inheritsLoose(CircularPath, _Circle);
+
+    function CircularPath(radius) {
+      var _this;
+
+      _this = _Circle.call(this, radius) || this;
+
+      for (var _len = arguments.length, angles = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        angles[_key - 1] = arguments[_key];
+      }
+
+      _this._angles = angles;
+      _this.angles = angles.map(function (value) {
+        return _this._degToRad(value);
+      });
+      _this._quad = null;
+      return _this;
+    }
+
+    var _proto = CircularPath.prototype;
+
+    // private
+    _proto._degToRad = function _degToRad(deg) {
+      return RAD * deg;
+    };
+
+    _proto._radToDeg = function _radToDeg(rad) {
+      return DEG * rad;
+    };
+
+    _proto._findPath = function _findPath(angle) {
+      // const quad = this.getQuadrant(DEG_ANGLE)
+      return [parseFloat((this.radius * Math.cos(angle)).toFixed(3)), parseFloat((this.radius * Math.sin(angle)).toFixed(3))];
+    };
+
+    _proto.getQuadrant = function getQuadrant(angle) {
+      if (angle <= Quadrant.FIRST) {
+        return Quadrant.FIRST;
+      } else if (angle <= Quadrant.SECOND && angle > Quadrant.FIRST) {
+        return Quadrant.SECOND;
+      } else if (angle <= Quadrant.THIRD && angle > Quadrant.SECOND) {
+        return Quadrant.THIRD;
+      } else if (angle <= Quadrant.FOURTH && angle > Quadrant.THIRD) {
+        return Quadrant.FOURTH;
+      }
+
+      throw RangeError('Quadrant out of range');
+    };
+
+    _createClass(CircularPath, [{
+      key: "paths",
+      get: function get() {
+        var _this2 = this;
+
+        /**
+         * @type {Path[]}
+         */
+        var out = [];
+        this.angles.forEach(function (value) {
+          var _this2$_findPath = _this2._findPath(value),
+              x = _this2$_findPath[0],
+              y = _this2$_findPath[1];
+
+          out.push(new Path(x, y));
+        });
+        return out;
+      }
+    }]);
+
+    return CircularPath;
+  }(Circle);
+
+  var Service =
+  /*#__PURE__*/
+  function () {
+    function Service(event) {
+      this._event = event;
+    }
+
+    var _proto = Service.prototype;
+
+    _proto.lock = function lock() {
+      this._event.stopImmediatePropagation();
+    };
+
+    _proto.inhibitSubTask = function inhibitSubTask() {
+      this._event.preventDefault();
+    };
+
+    return Service;
   }();
 
   var Rectangle =
   /*#__PURE__*/
-  function (_VectorRectangle) {
-    _inheritsLoose(Rectangle, _VectorRectangle);
+  function () {
+    function Rectangle() {
+      for (var _len = arguments.length, paths = new Array(_len), _key = 0; _key < _len; _key++) {
+        paths[_key] = arguments[_key];
+      }
 
-    // eslint-disable-next-line no-useless-constructor
-    function Rectangle(x1, y1, x2, y2) {
-      return _VectorRectangle.call(this, x1, y1, x2, y2) || this;
+      if (paths.length === 4) {
+        var x1 = paths[0],
+            y1 = paths[1],
+            x2 = paths[2],
+            y2 = paths[3];
+        this.coordsX = {
+          x1: x1,
+          x2: x2
+        };
+        this.coordsY = {
+          y1: y1,
+          y2: y2
+        };
+      } else if (paths.length === 2) {
+        var _paths$ = paths[0],
+            _x = _paths$.x1,
+            _y = _paths$.y1;
+        var _paths$2 = paths[1],
+            _x2 = _paths$2.x2,
+            _y2 = _paths$2.y2;
+        this.coordsX = {
+          x1: _x,
+          x2: _x2
+        };
+        this.coordsY = {
+          y1: _y,
+          y2: _y2
+        };
+      }
     } // getter
 
 
     _createClass(Rectangle, [{
       key: "width",
       get: function get() {
-        return Math.abs(this.displacementX);
+        return Math.abs(this.coordsX.x2 - this.coordsX.x1);
       }
     }, {
       key: "height",
       get: function get() {
-        return Math.abs(this.displacementY);
+        return Math.abs(this.coordsY.y2 - this.coordsY.y1);
+      }
+    }, {
+      key: "perimeter",
+      get: function get() {
+        return 2 * (this.width + this.height);
+      }
+    }, {
+      key: "area",
+      get: function get() {
+        return this.width * this.height;
       }
     }, {
       key: "greaterWidth",
@@ -506,12 +536,48 @@
     }]);
 
     return Rectangle;
-  }(VectorRectangle);
+  }();
 
-  var DIRECTION = 'bottom';
-  var DIMENSION = 'dimension';
-  var DISPLACEMENT = 'displacement';
-  var EVENT_OBJ = 'event';
+  var VectorRectangle =
+  /*#__PURE__*/
+  function (_Rectangle) {
+    _inheritsLoose(VectorRectangle, _Rectangle);
+
+    // eslint-disable-next-line no-useless-constructor
+    function VectorRectangle() {
+      for (var _len = arguments.length, paths = new Array(_len), _key = 0; _key < _len; _key++) {
+        paths[_key] = arguments[_key];
+      }
+
+      return _Rectangle.call.apply(_Rectangle, [this].concat(paths)) || this;
+    }
+
+    _createClass(VectorRectangle, [{
+      key: "displacementX",
+      get: function get() {
+        return this.coordsX.x2 - this.coordsX.x1;
+      }
+    }, {
+      key: "displacementY",
+      get: function get() {
+        return this.coordsY.y2 - this.coordsY.y1;
+      }
+    }, {
+      key: "resultant",
+      get: function get() {
+        if (!this.displacementY) {
+          return this.displacementX;
+        } else if (!this.displacementX) {
+          return this.displacementY;
+        }
+
+        return Math.sqrt(Math.pow(this.displacementY, 2) + Math.pow(this.displacementX, 2));
+      }
+    }]);
+
+    return VectorRectangle;
+  }(Rectangle);
+
   var THRESHOLD = 'threshold';
   var BELOW_THRESHOLD = 'belowthreshold';
   var OPEN = 'open';
@@ -569,7 +635,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = resolveThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -605,7 +671,7 @@
     }
     /**
      * The `touchstart` event handler for the `Bottom` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchstart` event.
      * @param {Function} fn - a callback function called when the `start`
@@ -616,36 +682,36 @@
 
     var _proto = Bottom.prototype;
 
-    _proto.start = function start(e, fn) {
+    _proto.start = function start(touchEvent, fn) {
       this.timing.start = new Date();
 
       this._updateOrientation();
 
       var WIN_HEIGHT = this.winSize;
-      var start = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      this.startX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var start = touchEvent.changedTouches[0].clientY;
+      this.startX = touchEvent.changedTouches[0].clientX;
       this.startY = start;
       /**
        * The `Drawer`'s `Bottom` class uses the `CSS property`, `bottom`
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
+      var currentPosition = offsetBottom(this.element);
       var bound = this.bound;
       this.positionOnStart = currentPosition;
-      var dimension = bound.lower ? "-" + (bound.upper - (WIN_HEIGHT - bound.lower)) + this.unit : "-" + (bound.upper - (WIN_HEIGHT - start)) + this.unit;
-      var displacement = "-" + (bound.upper - (WIN_HEIGHT - FALSE_TOUCH_START_POINT)) + this.unit;
+      var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - (WIN_HEIGHT - start)) + this.unit;
+      var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT) + this.unit;
 
-      if (start <= WIN_HEIGHT && start >= this.minArea && currentPosition !== ZERO$1) {
+      if (start <= WIN_HEIGHT && start >= this.minArea && currentPosition === bound.slack) {
         var _response;
 
-        var response = (_response = {}, _response[EVENT_OBJ] = e, _response[DIMENSION] = dimension, _response[DISPLACEMENT] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        var response = (_response = {}, _response[DrawerResponseInterface.position] = currentPosition, _response[DrawerResponseInterface.dimension] = dimension, _response[DrawerResponseInterface.displacement] = displacement, _response);
+        fn.call(this._context, new Service(touchEvent), response, new Path(this.startX, this.startY));
       }
     }
     /**
      * The `touchmove` event handler for the `Bottom` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchmove` event.
      * @param {Function} fn - a callback function called when the `move`
@@ -654,18 +720,19 @@
      */
     ;
 
-    _proto.move = function move(e, fn) {
+    _proto.move = function move(touchEvent, fn) {
       /* eslint complexity: ["error", 25] */
       var WIN_HEIGHT = this.winSize;
-      var FALSE_HEIGHT = WIN_HEIGHT - this.bound.upper;
-      var resume = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      this.resumeX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var FALSE_HEIGHT = WIN_HEIGHT - this.bound.upper; // should be `-this.positionOnStart`
+
+      var resume = touchEvent.changedTouches[0].clientY;
+      this.resumeX = touchEvent.changedTouches[0].clientX;
       this.resumeY = resume;
-      var currentPosition = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
-      var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO$1 ? CLOSE : OPEN;
-      var start = this.startY;
-      var height = bound.upper || this.height;
+      var currentPosition = offsetBottom(this.element);
+      var bound = this.bound; // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
+
+      var start = this.startY; // const height = bound.upper || this.height
+
       /**
        * When the touch doesn't start from the max-height
        * of the element ignore `start` and use `height`
@@ -673,36 +740,8 @@
        */
 
       var virtualStart = start < FALSE_HEIGHT ? FALSE_HEIGHT : start;
-      /**
-       * Dimension for opening. When the drawer is being opened,
-       * the `height` is the max dimension, and the `start` can
-       * only be less than the `height` (from a range of `0` to `this.maxArea` e.g `0` - `25`), so the current
-       * reading from `resume` is subtracted from the `height` to
-       * get the accurate position to update the drawer with.
-       *
-       *
-       * **WHY IT IS LIKE THIS `height - (WIN_HEIGHT - resume)`**
-       *
-       * `WIN_HEIGHT - resume` converts it from a vector to a scalar.
-       * Keeping it as a vector makes the dimension inaccurate
-       * as the `bottom` property of the `HTMLElement.style` is the one being updated and not the `top`,
-       * so the css `bottom` property is an enough respect for its direction.
-       *
-       * *__If it should be respected then:__*,
-       * 1. The `Bottom Drawer class` would be updating `top css property` and not `bottom`, i.e, initialy an element that uses the `Bottom Drawer` must have a `css file` that defines a `css top property` for the element and not a `bottom` property; As in
-       * ```scss
-       * .menu {
-       *   top: // (window size + height of the element)px
-       * }
-       * ```
-       * 2. Cardinal's `Bottom Drawer class` can always update
-       * as `HTMLElement.style.top = ${height - resume}px`, and
-       * not as it is now.
-       * This way there is no `bottom` property respecting the direction
-       * So the vector attribute of the dimension is preserved.
-       */
+      var dimension = "" + (start - resume + this.positionOnStart) + this.unit; // const dimension = `-${height - bound.lower - (WIN_HEIGHT - resume)}${this.unit}`
 
-      var dimension = "-" + (height - (WIN_HEIGHT - resume)) + this.unit;
       /**
        * Dimension for closing. When the drawer is being closed,
        * the `height` is the max dimension and the `start` could
@@ -714,8 +753,8 @@
        * `height`, the height becomes the start point else the `start`
        */
 
-      var vdimension = "-" + (resume - virtualStart) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var vdimension = "-" + (-virtualStart + resume - this.positionOnStart) + this.unit;
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundY = rect.greaterHeight;
 
       if (!this.scrollControlSet) {
@@ -724,25 +763,25 @@
       } // OPEN LOGIC
 
 
-      if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT + currentPosition) && currentPosition !== ZERO$1 && isBoundY && nextAction === OPEN && this.scrollControl && rect.displacementY < ZERO$1) {
+      if (start <= WIN_HEIGHT && (start >= this.minArea || start >= FALSE_HEIGHT - currentPosition) && currentPosition < ZERO && rect.width < bound.gap && isBoundY && this.scrollControl && rect.displacementY < ZERO) {
         var _response2;
 
-        var response = (_response2 = {}, _response2[EVENT_OBJ] = e, _response2[DIMENSION] = dimension, _response2.open = true, _response2.close = false, _response2);
-        fn.call(this._context, response, rect);
+        var response = (_response2 = {}, _response2[DrawerResponseInterface.position] = currentPosition, _response2[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response2[DrawerResponseInterface.dimension] = dimension, _response2[DrawerResponseInterface.open] = true, _response2[DrawerResponseInterface.close] = false, _response2);
+        fn.call(this._context, new Service(touchEvent), response, rect);
       } // CLOSE LOGIC
 
 
-      if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE && this.scrollControl && rect.displacementY > ZERO$1) {
+      if (resume >= FALSE_HEIGHT && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap && isBoundY && this.scrollControl && rect.displacementY > ZERO) {
         var _response4;
 
-        var _response3 = (_response4 = {}, _response4[EVENT_OBJ] = e, _response4[DIMENSION] = vdimension, _response4.close = true, _response4.open = false, _response4);
+        var _response3 = (_response4 = {}, _response4[DrawerResponseInterface.position] = currentPosition, _response4[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response4[DrawerResponseInterface.dimension] = vdimension, _response4[DrawerResponseInterface.close] = true, _response4[DrawerResponseInterface.open] = false, _response4);
 
-        fn.call(this._context, _response3, rect);
+        fn.call(this._context, new Service(touchEvent), _response3, rect);
       }
     }
     /**
      * The `touchend` event handler for the `Bottom` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchend` event.
      * @param {Function} fn - a callback function called when the `end`
@@ -753,49 +792,58 @@
      */
     ;
 
-    _proto.end = function end(e, fn, thresholdState) {
+    _proto.end = function end(touchEvent, fn, thresholdState) {
       var _response5;
 
       this.timing.end = new Date();
       var WIN_HEIGHT = this.winSize;
       var FALSE_HEIGHT = WIN_HEIGHT - this.bound.upper;
-      var end = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var end = touchEvent.changedTouches[0].clientY;
+      this.endX = touchEvent.changedTouches[0].clientX;
       this.endY = end;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startY;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
-      var signedOffsetSide = parseFloat(Bottom._getStyle(this.element)[DIRECTION].replace(/[^\d]*$/, ''));
+      var signedOffsetSide = offsetBottom(this.element);
       var bound = this.bound;
+      var customBound = new Bound(bound.upper + this.positionOnStart, bound.upper);
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO$1;
+      var zero = "" + ZERO;
+      var height = bound.upper || this.height;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN; // release the control for another session
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
-      var response = (_response5 = {}, _response5[EVENT_OBJ] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+      var response = (_response5 = {}, _response5[DrawerResponseInterface.position] = signedOffsetSide, _response5[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
-        var opposite = 'oppositeDimension';
-
         if (state === THRESHOLD && trueForOpen || state === BELOW_THRESHOLD && !trueForOpen) {
           var _extends2;
 
-          return _extends((_extends2 = {}, _extends2[DIMENSION] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+          return _extends((_extends2 = {}, _extends2[DrawerResponseInterface.dimension] = zero, _extends2.TIMING = TIMING, _extends2[DrawerResponseInterface.oppositeDimension] = nonZero, _extends2), response);
         } else if (state === THRESHOLD && !trueForOpen || state === BELOW_THRESHOLD && trueForOpen) {
           var _extends3;
 
-          return _extends((_extends3 = {}, _extends3[DIMENSION] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+          return _extends((_extends3 = {}, _extends3[DrawerResponseInterface.dimension] = nonZero, _extends3.TIMING = TIMING, _extends3[DrawerResponseInterface.oppositeDimension] = zero, _extends3), response);
         }
 
         return {};
       } // OPEN LOGIC
 
 
-      if (rect.displacementY < ZERO$1 && (start >= this.minArea || start >= FALSE_HEIGHT + signedOffsetSide)) {
-        if (offsetSide <= this.height * threshold) {
+      if (rect.displacementY <= ZERO && (start >= this.minArea || start >= FALSE_HEIGHT - signedOffsetSide)) {
+        /**
+         * Threshold resolution is done here to get the original
+         * set value of the threshold before the first resolution
+         * Here it's the original value of threshold needed, if
+         * it was a legal value.
+         * value = 0.75
+         * value = resolve(value) => 0.25
+         * resolve(value) => 0.75
+         */
+        if (rect.height >= customBound.gap * resolveThreshold(threshold)) {
           thresholdState.state = [THRESHOLD, CLOSE];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         } else {
@@ -803,15 +851,16 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
         return;
       } // CLOSE LOGIC
 
 
-      if (rect.displacementY > ZERO$1 && this.resumeY >= FALSE_HEIGHT) {
+      if (rect.displacementY >= ZERO && this.resumeY >= FALSE_HEIGHT) {
         action = CLOSE;
 
-        if (offsetSide >= this.height * threshold) {
+        if (offsetSide >= height * threshold) {
           thresholdState.state = [THRESHOLD, OPEN];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         } else {
@@ -819,6 +868,7 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
       }
     };
@@ -829,11 +879,11 @@
     };
 
     Bottom._getStyle = function _getStyle(elt, pseudoElt) {
-      return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
+      return pseudoElt ? WINDOW.getComputedStyle(elt, pseudoElt) : WINDOW.getComputedStyle(elt);
     };
 
     Bottom._windowSize = function _windowSize() {
-      return window.screen.availHeight;
+      return WINDOW.screen.height;
     } // no need for `window.onorientationchange`
     ;
 
@@ -845,10 +895,6 @@
     return Bottom;
   }();
 
-  var DIRECTION$1 = 'left';
-  var DIMENSION$1 = 'dimension';
-  var DISPLACEMENT$1 = 'displacement';
-  var EVENT_OBJ$1 = 'event';
   var THRESHOLD$1 = 'threshold';
   var BELOW_THRESHOLD$1 = 'belowthreshold';
   var OPEN$1 = 'open';
@@ -906,7 +952,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE$1;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = resolveThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -942,7 +988,7 @@
     }
     /**
      * The `touchstart` event handler for the `Left` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchstart` event.
      * @param {Function} fn - a callback function called when the `start`
@@ -953,32 +999,35 @@
 
     var _proto = Left.prototype;
 
-    _proto.start = function start(e, fn) {
+    _proto.start = function start(touchEvent, fn) {
       this.timing.start = new Date();
-      var start = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+
+      this._updateOrientation();
+
+      var start = touchEvent.changedTouches[0].clientX;
       this.startX = start;
-      this.startY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.startY = touchEvent.changedTouches[0].clientY;
       /**
        * The `Drawer`'s `Left` class uses the `CSS property`, `left`
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
+      var currentPosition = this.element.offsetLeft;
       var bound = this.bound;
       this.positionOnStart = currentPosition;
       var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - start) + this.unit;
       var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$1) + this.unit;
 
-      if (start >= ZERO$1 && start <= this.maxArea && currentPosition !== ZERO$1) {
+      if (start >= ZERO && start <= this.maxArea && currentPosition === bound.slack) {
         var _response;
 
-        var response = (_response = {}, _response[EVENT_OBJ$1] = e, _response[DIMENSION$1] = dimension, _response[DISPLACEMENT$1] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        var response = (_response = {}, _response[DrawerResponseInterface.position] = currentPosition, _response[DrawerResponseInterface.dimension] = dimension, _response[DrawerResponseInterface.displacement] = displacement, _response);
+        fn.call(this._context, new Service(touchEvent), response, new Path(this.startX, this.startY));
       }
     }
     /**
      * The `touchmove` event handler for the `Left` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchmove` event.
      * @param {Function} fn - a callback function called when the `move`
@@ -987,14 +1036,14 @@
      */
     ;
 
-    _proto.move = function move(e, fn) {
+    _proto.move = function move(touchEvent, fn) {
       /* eslint complexity: ["error", 25] */
-      var resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var resume = touchEvent.changedTouches[0].clientX;
       this.resumeX = resume;
-      this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var currentPosition = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
-      var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO$1 ? CLOSE$1 : OPEN$1;
+      this.resumeY = touchEvent.changedTouches[0].clientY;
+      var currentPosition = this.element.offsetLeft;
+      var bound = this.bound; // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
+
       var start = this.startX;
       var width = bound.upper || this.width;
       /**
@@ -1013,7 +1062,8 @@
        * get the accurate position to update the drawer with.
        */
 
-      var dimension = "-" + (width - resume) + this.unit;
+      var dimension = "" + (-start + resume + this.positionOnStart) + this.unit; // const dimension = `-${width - bound.lower - resume}${this.unit}`
+
       /**
        * Dimension for closing. When the drawer is being closed,
        * the `width` is the max dimension and the `start` could
@@ -1025,8 +1075,8 @@
        * `width`, the width becomes the start point else the `start`
        */
 
-      var vdimension = "-" + (virtualStart - resume) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var vdimension = "-" + (virtualStart - resume - this.positionOnStart) + this.unit;
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundX = rect.greaterWidth;
 
       if (!this.scrollControlSet) {
@@ -1035,25 +1085,25 @@
       } // OPEN LOGIC
 
 
-      if (start >= ZERO$1 && (start <= this.maxArea || start <= width + currentPosition) && currentPosition !== ZERO$1 && isBoundX && nextAction === OPEN$1 && this.scrollControl && rect.displacementX > ZERO$1) {
+      if (start >= ZERO && (start <= this.maxArea || start <= width + currentPosition) && currentPosition < ZERO && rect.width < bound.gap && isBoundX && this.scrollControl && rect.displacementX > ZERO) {
         var _response2;
 
-        var response = (_response2 = {}, _response2[EVENT_OBJ$1] = e, _response2[DIMENSION$1] = dimension, _response2.open = true, _response2.close = false, _response2);
-        fn.call(this._context, response, rect);
+        var response = (_response2 = {}, _response2[DrawerResponseInterface.position] = currentPosition, _response2[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response2[DrawerResponseInterface.dimension] = dimension, _response2[DrawerResponseInterface.open] = true, _response2[DrawerResponseInterface.close] = false, _response2);
+        fn.call(this._context, new Service(touchEvent), response, rect);
       } // CLOSE LOGIC
 
 
-      if (resume <= width && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$1 && this.scrollControl && rect.displacementX < ZERO$1) {
+      if (resume <= width && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap && isBoundX && this.scrollControl && rect.displacementX < ZERO) {
         var _response4;
 
-        var _response3 = (_response4 = {}, _response4[EVENT_OBJ$1] = e, _response4[DIMENSION$1] = vdimension, _response4.close = true, _response4.open = false, _response4);
+        var _response3 = (_response4 = {}, _response4[DrawerResponseInterface.position] = currentPosition, _response4[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response4[DrawerResponseInterface.dimension] = vdimension, _response4[DrawerResponseInterface.close] = true, _response4[DrawerResponseInterface.open] = false, _response4);
 
-        fn.call(this._context, _response3, rect);
+        fn.call(this._context, new Service(touchEvent), _response3, rect);
       }
     }
     /**
      * The `touchend` event handler for the `Left` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchend` event.
      * @param {Function} fn - a callback function called when the `end`
@@ -1064,48 +1114,47 @@
      */
     ;
 
-    _proto.end = function end(e, fn, thresholdState) {
+    _proto.end = function end(touchEvent, fn, thresholdState) {
       var _response5;
 
       this.timing.end = new Date();
-      var end = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var end = touchEvent.changedTouches[0].clientX;
       this.endX = end;
-      this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      this.endY = touchEvent.changedTouches[0].clientY;
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startX;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
-      var signedOffsetSide = parseFloat(Left._getStyle(this.element)[DIRECTION$1].replace(/[^\d]*$/, ''));
+      var signedOffsetSide = this.element.offsetLeft;
       var bound = this.bound;
+      var customBound = new Bound(bound.upper + this.positionOnStart, bound.upper);
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO$1;
+      var zero = "" + ZERO;
       var width = bound.upper || this.width;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN$1; // release the control for another session
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
-      var response = (_response5 = {}, _response5[EVENT_OBJ$1] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+      var response = (_response5 = {}, _response5[DrawerResponseInterface.position] = signedOffsetSide, _response5[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
-        var opposite = 'oppositeDimension';
-
         if (state === THRESHOLD$1 && trueForOpen || state === BELOW_THRESHOLD$1 && !trueForOpen) {
           var _extends2;
 
-          return _extends((_extends2 = {}, _extends2[DIMENSION$1] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+          return _extends((_extends2 = {}, _extends2[DrawerResponseInterface.dimension] = zero, _extends2.TIMING = TIMING, _extends2[DrawerResponseInterface.oppositeDimension] = nonZero, _extends2), response);
         } else if (state === THRESHOLD$1 && !trueForOpen || state === BELOW_THRESHOLD$1 && trueForOpen) {
           var _extends3;
 
-          return _extends((_extends3 = {}, _extends3[DIMENSION$1] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+          return _extends((_extends3 = {}, _extends3[DrawerResponseInterface.dimension] = nonZero, _extends3.TIMING = TIMING, _extends3[DrawerResponseInterface.oppositeDimension] = zero, _extends3), response);
         }
 
         return {};
       } // OPEN LOGIC
 
 
-      if (rect.displacementX > ZERO$1 && (start <= this.maxArea || start <= width + signedOffsetSide)) {
-        if (offsetSide <= this.width * threshold) {
+      if (rect.displacementX >= ZERO && (start <= this.maxArea || start <= width + signedOffsetSide)) {
+        if (rect.width >= customBound.gap * resolveThreshold(threshold)) {
           thresholdState.state = [THRESHOLD$1, CLOSE$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         } else {
@@ -1113,15 +1162,16 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
         return;
       } // CLOSE LOGIC
 
 
-      if (rect.displacementX < ZERO$1 && this.resumeX <= this.width) {
+      if (rect.displacementX <= ZERO && this.resumeX <= width) {
         action = CLOSE$1;
 
-        if (offsetSide >= this.width * threshold) {
+        if (offsetSide >= width * threshold) {
           thresholdState.state = [THRESHOLD$1, OPEN$1];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         } else {
@@ -1129,15 +1179,9 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
       }
-
-      this.startX = -1;
-      this.startY = -1;
-      this.resumeX = -1;
-      this.resumeY = -1;
-      this.endX = -1;
-      this.endY = -1;
     };
 
     _proto.setContext = function setContext(ctx) {
@@ -1146,20 +1190,23 @@
     };
 
     Left._getStyle = function _getStyle(elt, pseudoElt) {
-      return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
+      return pseudoElt ? WINDOW.getComputedStyle(elt, pseudoElt) : WINDOW.getComputedStyle(elt);
     };
 
     Left._windowSize = function _windowSize() {
-      return window.screen.availWidth;
+      return WINDOW.screen.width;
+    } // window size is not needed here; at least not yet
+    // the major purpose of this is to update bound dependents
+    ;
+
+    _proto._updateOrientation = function _updateOrientation() {
+      this.winSize = typeof this._winSize === 'function' ? this._winSize() : Left._windowSize();
+      this.minArea = this.bound.lower || this.options.maxStartArea || MAX_START_AREA$1;
     };
 
     return Left;
   }();
 
-  var DIRECTION$2 = 'right';
-  var DIMENSION$2 = 'dimension';
-  var DISPLACEMENT$2 = 'displacement';
-  var EVENT_OBJ$2 = 'event';
   var THRESHOLD$2 = 'threshold';
   var BELOW_THRESHOLD$2 = 'belowthreshold';
   var OPEN$2 = 'open';
@@ -1217,7 +1264,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE$2;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = resolveThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -1253,7 +1300,7 @@
     }
     /**
      * The `touchstart` event handler for the `Left` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchstart` event.
      * @param {Function} fn - a callback function called when the `start`
@@ -1264,36 +1311,36 @@
 
     var _proto = Right.prototype;
 
-    _proto.start = function start(e, fn) {
+    _proto.start = function start(touchEvent, fn) {
       this.timing.start = new Date();
 
       this._updateOrientation();
 
       var WIN_WIDTH = this.winSize;
-      var start = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var start = touchEvent.changedTouches[0].clientX;
       this.startX = start;
-      this.startY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
+      this.startY = touchEvent.changedTouches[0].clientY;
       /**
        * The `Drawer`'s `Right` class uses the `CSS property`, `right`
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
+      var currentPosition = offsetRight(this.element);
       var bound = this.bound;
       this.positionOnStart = currentPosition;
-      var dimension = bound.lower ? "-" + (bound.upper - (WIN_WIDTH - bound.lower)) + this.unit : "-" + (bound.upper - (WIN_WIDTH - start)) + this.unit;
-      var displacement = "-" + (bound.upper - (WIN_WIDTH - FALSE_TOUCH_START_POINT$2)) + this.unit;
+      var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - (WIN_WIDTH - start)) + this.unit;
+      var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$2) + this.unit;
 
-      if (start <= WIN_WIDTH && start >= this.minArea && currentPosition !== ZERO$1) {
+      if (start <= WIN_WIDTH && start >= this.minArea && currentPosition === bound.slack) {
         var _response;
 
-        var response = (_response = {}, _response[EVENT_OBJ$2] = e, _response[DIMENSION$2] = dimension, _response[DISPLACEMENT$2] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        var response = (_response = {}, _response[DrawerResponseInterface.position] = currentPosition, _response[DrawerResponseInterface.dimension] = dimension, _response[DrawerResponseInterface.displacement] = displacement, _response);
+        fn.call(this._context, new Service(touchEvent), response, new Path(this.startX, this.startY));
       }
     }
     /**
      * The `touchmove` event handler for the `Right` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchmove` event.
      * @param {Function} fn - a callback function called when the `move`
@@ -1302,18 +1349,18 @@
      */
     ;
 
-    _proto.move = function move(e, fn) {
+    _proto.move = function move(touchEvent, fn) {
       /* eslint complexity: ["error", 25] */
       var WIN_WIDTH = this.winSize;
       var FALSE_WIDTH = WIN_WIDTH - this.bound.upper;
-      var resume = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var resume = touchEvent.changedTouches[0].clientX;
       this.resumeX = resume;
-      this.resumeY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var currentPosition = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
-      var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO$1 ? CLOSE$2 : OPEN$2;
-      var start = this.startX;
-      var width = bound.upper || this.width;
+      this.resumeY = touchEvent.changedTouches[0].clientY;
+      var currentPosition = offsetRight(this.element);
+      var bound = this.bound; // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
+
+      var start = this.startX; // const width = bound.upper || this.width
+
       /**
        * When the touch doesn't start from the max-width
        * of the element ignore `start` and use `width`
@@ -1321,36 +1368,8 @@
        */
 
       var virtualStart = start < FALSE_WIDTH ? FALSE_WIDTH : start;
-      /**
-       * Dimension for opening. When the drawer is being opened,
-       * the `width` is the max dimension, and the `start` can
-       * only be less than the `width` (from a range of `0` to `this.maxArea` e.g `0` - `25`), so the current
-       * reading from `resume` is subtracted from the `width` to
-       * get the accurate position to update the drawer with.
-       *
-       *
-       * **WHY IT IS LIKE THIS `width - (WIN_WIDTH - resume)`**
-       *
-       * `WIN_WIDTH - resume` converts it from a vector to a scalar.
-       * Keeping it as a vector makes the dimension inaccurate
-       * as the `right` property of the `HTMLElement.style` is the one being updated and not the `left`,
-       * so the css `right` property is an enough respect for its direction.
-       *
-       * *__If it should be respected then:__*,
-       * 1. The `Right Drawer class` would be updating `left css property` and not `right`, i.e, initialy an element that uses the `Right Drawer` must have a `css file` that defines a `css left property` for the element and not a `right` property; As in
-       * ```scss
-       * .menu {
-       *   left: // (window size + width of the element)px
-       * }
-       * ```
-       * 2. Cardinal's `Right Drawer class` can always update
-       * as `HTMLElement.style.left = ${width - resume}px`, and
-       * not as it is now.
-       * This way there is no `right` property respecting the direction
-       * So the vector attribute of the dimension is preserved.
-       */
+      var dimension = "" + (start - resume + this.positionOnStart) + this.unit; // const dimension = `-${width - bound.lower - (WIN_WIDTH - resume)}${this.unit}`
 
-      var dimension = "-" + (width - (WIN_WIDTH - resume)) + this.unit;
       /**
        * Dimension for closing. When the drawer is being closed,
        * the `width` is the max dimension and the `start` could
@@ -1362,8 +1381,8 @@
        * `width`, the width becomes the start point else the `start`
        */
 
-      var vdimension = "-" + (resume - virtualStart) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var vdimension = "-" + (-virtualStart + resume - this.positionOnStart) + this.unit;
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundX = rect.greaterWidth;
 
       if (!this.scrollControlSet) {
@@ -1372,25 +1391,25 @@
       } // OPEN LOGIC
 
 
-      if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH + currentPosition) && currentPosition !== ZERO$1 && isBoundX && nextAction === OPEN$2 && this.scrollControl && rect.displacementX < ZERO$1) {
+      if (start <= WIN_WIDTH && (start >= this.minArea || start >= FALSE_WIDTH - currentPosition) && currentPosition < ZERO && rect.width < bound.gap && isBoundX && this.scrollControl && rect.displacementX < ZERO) {
         var _response2;
 
-        var response = (_response2 = {}, _response2[EVENT_OBJ$2] = e, _response2[DIMENSION$2] = dimension, _response2.open = true, _response2.close = false, _response2);
-        fn.call(this._context, response, rect);
+        var response = (_response2 = {}, _response2[DrawerResponseInterface.position] = currentPosition, _response2[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response2[DrawerResponseInterface.dimension] = dimension, _response2[DrawerResponseInterface.open] = true, _response2[DrawerResponseInterface.close] = false, _response2);
+        fn.call(this._context, new Service(touchEvent), response, rect);
       } // CLOSE LOGIC
 
 
-      if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < width - bound.lower && isBoundX && nextAction === CLOSE$2 && this.scrollControl && rect.displacementX > ZERO$1) {
+      if (resume >= FALSE_WIDTH && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap && isBoundX && this.scrollControl && rect.displacementX > ZERO) {
         var _response4;
 
-        var _response3 = (_response4 = {}, _response4[EVENT_OBJ$2] = e, _response4[DIMENSION$2] = vdimension, _response4.close = true, _response4.open = false, _response4);
+        var _response3 = (_response4 = {}, _response4[DrawerResponseInterface.position] = currentPosition, _response4[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response4[DrawerResponseInterface.dimension] = vdimension, _response4[DrawerResponseInterface.close] = true, _response4[DrawerResponseInterface.open] = false, _response4);
 
-        fn.call(this._context, _response3, rect);
+        fn.call(this._context, new Service(touchEvent), _response3, rect);
       }
     }
     /**
      * The `touchend` event handler for the `Right` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchend` event.
      * @param {Function} fn - a callback function called when the `end`
@@ -1401,49 +1420,49 @@
      */
     ;
 
-    _proto.end = function end(e, fn, thresholdState) {
+    _proto.end = function end(touchEvent, fn, thresholdState) {
       var _response5;
 
       this.timing.end = new Date();
       var WIN_WIDTH = this.winSize;
       var FALSE_WIDTH = WIN_WIDTH - this.bound.upper;
-      var end = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var end = touchEvent.changedTouches[0].clientX;
       this.endX = end;
-      this.endY = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      this.endY = touchEvent.changedTouches[0].clientY;
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startX;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
-      var signedOffsetSide = parseFloat(Right._getStyle(this.element)[DIRECTION$2].replace(/[^\d]*$/, ''));
+      var signedOffsetSide = offsetRight(this.element);
       var bound = this.bound;
+      var customBound = new Bound(bound.upper + this.positionOnStart, bound.upper);
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO$1;
+      var zero = "" + ZERO;
+      var width = bound.upper || this.width;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN$2; // release the control for another session
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
-      var response = (_response5 = {}, _response5[EVENT_OBJ$2] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+      var response = (_response5 = {}, _response5[DrawerResponseInterface.position] = signedOffsetSide, _response5[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
-        var opposite = 'oppositeDimension';
-
         if (state === THRESHOLD$2 && trueForOpen || state === BELOW_THRESHOLD$2 && !trueForOpen) {
           var _extends2;
 
-          return _extends((_extends2 = {}, _extends2[DIMENSION$2] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+          return _extends((_extends2 = {}, _extends2[DrawerResponseInterface.dimension] = zero, _extends2.TIMING = TIMING, _extends2[DrawerResponseInterface.oppositeDimension] = nonZero, _extends2), response);
         } else if (state === THRESHOLD$2 && !trueForOpen || state === BELOW_THRESHOLD$2 && trueForOpen) {
           var _extends3;
 
-          return _extends((_extends3 = {}, _extends3[DIMENSION$2] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+          return _extends((_extends3 = {}, _extends3[DrawerResponseInterface.dimension] = nonZero, _extends3.TIMING = TIMING, _extends3[DrawerResponseInterface.oppositeDimension] = zero, _extends3), response);
         }
 
         return {};
       } // OPEN LOGIC
 
 
-      if (rect.displacementX < ZERO$1 && (start >= this.minArea || start >= FALSE_WIDTH + signedOffsetSide)) {
-        if (offsetSide <= this.width * threshold) {
+      if (rect.displacementX <= ZERO && (start >= this.minArea || start >= FALSE_WIDTH - signedOffsetSide)) {
+        if (rect.width >= customBound.gap * resolveThreshold(threshold)) {
           thresholdState.state = [THRESHOLD$2, CLOSE$2];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         } else {
@@ -1451,15 +1470,16 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
         return;
       } // CLOSE LOGIC
 
 
-      if (rect.displacementX > ZERO$1 && this.resumeX >= FALSE_WIDTH) {
+      if (rect.displacementX >= ZERO && this.resumeX >= FALSE_WIDTH) {
         action = CLOSE$2;
 
-        if (offsetSide >= this.width * threshold) {
+        if (offsetSide >= width * threshold) {
           thresholdState.state = [THRESHOLD$2, OPEN$2];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         } else {
@@ -1467,6 +1487,7 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
       }
     };
@@ -1477,11 +1498,11 @@
     };
 
     Right._getStyle = function _getStyle(elt, pseudoElt) {
-      return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
+      return pseudoElt ? WINDOW.getComputedStyle(elt, pseudoElt) : WINDOW.getComputedStyle(elt);
     };
 
     Right._windowSize = function _windowSize() {
-      return window.screen.availWidth;
+      return WINDOW.screen.width;
     } // no need for `window.onorientationchange`
     ;
 
@@ -1493,10 +1514,6 @@
     return Right;
   }();
 
-  var DIRECTION$3 = 'top';
-  var DIMENSION$3 = 'dimension';
-  var DISPLACEMENT$3 = 'displacement';
-  var EVENT_OBJ$3 = 'event';
   var THRESHOLD$3 = 'threshold';
   var BELOW_THRESHOLD$3 = 'belowthreshold';
   var OPEN$3 = 'open';
@@ -1554,7 +1571,7 @@
        */
 
       this.threshold = this.options.threshold || THRESHOLD_VALUE$3;
-      this.threshold = validateThreshold(this.threshold); // Touch coordinates (Touch Start)
+      this.threshold = resolveThreshold(this.threshold); // Touch coordinates (Touch Start)
 
       this.startX = -1;
       this.startY = -1; // Touch coordinates (Touch Move)
@@ -1590,7 +1607,7 @@
     }
     /**
      * The `touchstart` event handler for the `Top` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchstart` event.
      * @param {Function} fn - a callback function called when the `start`
@@ -1601,32 +1618,36 @@
 
     var _proto = Top.prototype;
 
-    _proto.start = function start(e, fn) {
+    _proto.start = function start(touchEvent, fn) {
       this.timing.start = new Date();
-      var start = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      this.startX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+
+      this._updateOrientation();
+
+      var start = touchEvent.changedTouches[0].clientY;
+      this.startX = touchEvent.changedTouches[0].clientX;
       this.startY = start;
       /**
        * The `Drawer`'s `Top` class uses the `CSS property`, `top`
        * for updating and defining position of the drawn element
        */
 
-      var currentPosition = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
+      var currentPosition = this.element.offsetTop;
       var bound = this.bound;
       this.positionOnStart = currentPosition;
       var dimension = bound.lower ? "-" + (bound.upper - bound.lower) + this.unit : "-" + (bound.upper - start) + this.unit;
       var displacement = "-" + (bound.upper - FALSE_TOUCH_START_POINT$3) + this.unit;
+      var maxArea = bound.lower || this.minArea;
 
-      if (start >= ZERO$1 && start <= this.maxArea && currentPosition !== ZERO$1) {
+      if (start >= ZERO && start <= maxArea && currentPosition === bound.slack) {
         var _response;
 
-        var response = (_response = {}, _response[EVENT_OBJ$3] = e, _response[DIMENSION$3] = dimension, _response[DISPLACEMENT$3] = displacement, _response);
-        fn.call(this._context, response, new Rectangle(this.startX, this.startY, -1, -1));
+        var response = (_response = {}, _response[DrawerResponseInterface.position] = currentPosition, _response[DrawerResponseInterface.dimension] = dimension, _response[DrawerResponseInterface.displacement] = displacement, _response);
+        fn.call(this._context, new Service(touchEvent), response, new Path(this.startX, this.startY));
       }
     }
     /**
      * The `touchmove` event handler for the `Top` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchmove` event.
      * @param {Function} fn - a callback function called when the `move`
@@ -1635,14 +1656,14 @@
      */
     ;
 
-    _proto.move = function move(e, fn) {
+    _proto.move = function move(touchEvent, fn) {
       /* eslint complexity: ["error", 25] */
-      var resume = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      this.resumeX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var resume = touchEvent.changedTouches[0].clientY;
+      this.resumeX = touchEvent.changedTouches[0].clientX;
       this.resumeY = resume;
-      var currentPosition = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
-      var bound = this.bound;
-      var nextAction = this.positionOnStart === ZERO$1 ? CLOSE$3 : OPEN$3;
+      var currentPosition = this.element.offsetTop;
+      var bound = this.bound; // const nextAction = this.positionOnStart === ZERO ? CLOSE : OPEN
+
       var start = this.startX;
       var height = bound.upper || this.height;
       /**
@@ -1661,7 +1682,8 @@
        * get the accurate position to update the drawer with.
        */
 
-      var dimension = "-" + (height - resume) + this.unit;
+      var dimension = "" + (-start + resume + this.positionOnStart) + this.unit; // const dimension = `-${height - bound.lower - resume}${this.unit}`
+
       /**
        * Dimension for closing. When the drawer is being closed,
        * the `height` is the max dimension and the `start` could
@@ -1673,8 +1695,8 @@
        * `height`, the height becomes the start point else the `start`
        */
 
-      var vdimension = "-" + (virtualStart - resume) + this.unit;
-      var rect = new Rectangle(this.startX, this.startY, this.resumeX, this.resumeY);
+      var vdimension = "-" + (virtualStart - resume - this.positionOnStart) + this.unit;
+      var rect = new VectorRectangle(this.startX, this.startY, this.resumeX, this.resumeY);
       var isBoundY = rect.greaterHeight;
 
       if (!this.scrollControlSet) {
@@ -1683,25 +1705,25 @@
       } // OPEN LOGIC
 
 
-      if (start >= ZERO$1 && (start <= this.maxArea || start <= height + currentPosition) && currentPosition !== ZERO$1 && isBoundY && nextAction === OPEN$3 && this.scrollControl && rect.displacementY > ZERO$1) {
+      if (start >= ZERO && (start <= this.maxArea || start <= height + currentPosition) && currentPosition < ZERO && rect.width < bound.gap && isBoundY && this.scrollControl && rect.displacementY > ZERO) {
         var _response2;
 
-        var response = (_response2 = {}, _response2[EVENT_OBJ$3] = e, _response2[DIMENSION$3] = dimension, _response2.open = true, _response2.close = false, _response2);
-        fn.call(this._context, response, rect);
+        var response = (_response2 = {}, _response2[DrawerResponseInterface.position] = currentPosition, _response2[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response2[DrawerResponseInterface.dimension] = dimension, _response2[DrawerResponseInterface.open] = true, _response2[DrawerResponseInterface.close] = false, _response2);
+        fn.call(this._context, new Service(touchEvent), response, rect);
       } // CLOSE LOGIC
 
 
-      if (resume <= this.height && Math.abs(currentPosition) < height - bound.lower && isBoundY && nextAction === CLOSE$3 && this.scrollControl && rect.displacementY < ZERO$1) {
+      if (resume <= this.height && Math.abs(currentPosition) < bound.gap && rect.width < bound.gap && isBoundY && this.scrollControl && rect.displacementY < ZERO) {
         var _response4;
 
-        var _response3 = (_response4 = {}, _response4[EVENT_OBJ$3] = e, _response4[DIMENSION$3] = vdimension, _response4.close = true, _response4.open = false, _response4);
+        var _response3 = (_response4 = {}, _response4[DrawerResponseInterface.position] = currentPosition, _response4[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response4[DrawerResponseInterface.dimension] = vdimension, _response4[DrawerResponseInterface.close] = true, _response4[DrawerResponseInterface.open] = false, _response4);
 
-        fn.call(this._context, _response3, rect);
+        fn.call(this._context, new Service(touchEvent), _response3, rect);
       }
     }
     /**
      * The `touchend` event handler for the `Top` drawer `class`
-     * @param {TouchEvent} e an event `object`: An event `object`
+     * @param {TouchEvent} touchEvent an event `object`: An event `object`
      * representing an `object` of all `properties` related
      * to the `touchend` event.
      * @param {Function} fn - a callback function called when the `end`
@@ -1712,48 +1734,47 @@
      */
     ;
 
-    _proto.end = function end(e, fn, thresholdState) {
+    _proto.end = function end(touchEvent, fn, thresholdState) {
       var _response5;
 
       this.timing.end = new Date();
-      var end = e.changedTouches[0].pageY || e.changedTouches[0].clientY;
-      this.endX = e.changedTouches[0].pageX || e.changedTouches[0].clientX;
+      var end = touchEvent.changedTouches[0].clientY;
+      this.endX = touchEvent.changedTouches[0].clientX;
       this.endY = end;
-      var rect = new Rectangle(this.startX, this.startY, this.endX, this.endY);
+      var rect = new VectorRectangle(this.startX, this.startY, this.endX, this.endY);
       var start = this.startY;
       var TIMING = this.timing.end.getTime() - this.timing.start.getTime();
       var threshold = this.threshold;
-      var signedOffsetSide = parseFloat(Top._getStyle(this.element)[DIRECTION$3].replace(/[^\d]*$/, ''));
+      var signedOffsetSide = this.element.offsetTop;
       var bound = this.bound;
+      var customBound = new Bound(bound.upper + this.positionOnStart, bound.upper);
       var nonZero = "" + bound.slack + this.unit;
-      var zero = "" + ZERO$1;
+      var zero = "" + ZERO;
       var height = bound.upper || this.height;
       var offsetSide = Math.abs(signedOffsetSide);
       var action = OPEN$3; // release the control for another session
 
       this.scrollControl = this.scrollControlSet = false; // eslint-disable-line no-multi-assign
 
-      var response = (_response5 = {}, _response5[EVENT_OBJ$3] = e, _response5.position = signedOffsetSide, _response5.rect = rect, _response5);
+      var response = (_response5 = {}, _response5[DrawerResponseInterface.position] = signedOffsetSide, _response5[DrawerResponseInterface.posOnStart] = this.positionOnStart, _response5.rect = rect, _response5);
 
       function getResponse(state, trueForOpen) {
-        var opposite = 'oppositeDimension';
-
         if (state === THRESHOLD$3 && trueForOpen || state === BELOW_THRESHOLD$3 && !trueForOpen) {
           var _extends2;
 
-          return _extends((_extends2 = {}, _extends2[DIMENSION$3] = zero, _extends2.TIMING = TIMING, _extends2[opposite] = nonZero, _extends2), response);
+          return _extends((_extends2 = {}, _extends2[DrawerResponseInterface.dimension] = zero, _extends2.TIMING = TIMING, _extends2[DrawerResponseInterface.oppositeDimension] = nonZero, _extends2), response);
         } else if (state === THRESHOLD$3 && !trueForOpen || state === BELOW_THRESHOLD$3 && trueForOpen) {
           var _extends3;
 
-          return _extends((_extends3 = {}, _extends3[DIMENSION$3] = nonZero, _extends3.TIMING = TIMING, _extends3[opposite] = zero, _extends3), response);
+          return _extends((_extends3 = {}, _extends3[DrawerResponseInterface.dimension] = nonZero, _extends3.TIMING = TIMING, _extends3[DrawerResponseInterface.oppositeDimension] = zero, _extends3), response);
         }
 
         return {};
       } // OPEN LOGIC
 
 
-      if (rect.displacementY > ZERO$1 && (start <= this.maxArea || start <= height + signedOffsetSide)) {
-        if (offsetSide <= this.height * threshold) {
+      if (rect.displacementY >= ZERO && (start <= this.maxArea || start <= height + signedOffsetSide)) {
+        if (rect.height >= customBound.gap * resolveThreshold(threshold)) {
           thresholdState.state = [THRESHOLD$3, CLOSE$3];
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         } else {
@@ -1761,15 +1782,16 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], true);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
         return;
       } // CLOSE LOGIC
 
 
-      if (rect.displacementY < ZERO$1 && this.resumeY <= this.height) {
+      if (rect.displacementY <= ZERO && this.resumeY <= height) {
         action = CLOSE$3;
 
-        if (offsetSide >= this.height * threshold) {
+        if (offsetSide >= height * threshold) {
           thresholdState.state = [THRESHOLD$3, OPEN$3];
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         } else {
@@ -1777,6 +1799,7 @@
           thresholdState.stateObj = getResponse(thresholdState.state[0], false);
         }
 
+        thresholdState.service = new Service(touchEvent);
         fn.call(this, action);
       }
     };
@@ -1787,11 +1810,18 @@
     };
 
     Top._getStyle = function _getStyle(elt, pseudoElt) {
-      return pseudoElt ? window.getComputedStyle(elt, pseudoElt) : window.getComputedStyle(elt);
+      return pseudoElt ? WINDOW.getComputedStyle(elt, pseudoElt) : WINDOW.getComputedStyle(elt);
     };
 
     Top._windowSize = function _windowSize() {
-      return window.screen.availHeight;
+      return WINDOW.screen.height;
+    } // window size is not need here; at least not yet
+    // the major purpose of this is to update bound dependents
+    ;
+
+    _proto._updateOrientation = function _updateOrientation() {
+      this.winSize = typeof this._winSize === 'function' ? this._winSize() : Top._windowSize();
+      this.minArea = this.bound.lower || this.options.maxStartArea || MAX_START_AREA$3;
     };
 
     return Top;
@@ -1802,6 +1832,7 @@
   var START = 'start';
   var MOVE = 'move';
   var END = 'end';
+  var CLASS_TYPE = '[object SnappedDrawer]';
 
   var SnappedDrawer =
   /*#__PURE__*/
@@ -1809,25 +1840,21 @@
     /**
      * @param {{}} options an object of configuration options
      * @param {Bound} bound a boundary object
+     * @param {{}} drawerManager an object that helps manage drawers
+     * especially when more than one drawer service is running
      */
-    function SnappedDrawer(options, bound) {
+    function SnappedDrawer(options, bound, drawerManager) {
       this._options = options;
-      /**
-       * @type {HTMLElement}
-       */
-
+      this._drawerManager = drawerManager;
       this._element = options.ELEMENT;
       this._target = options.TARGET;
-      this.events = ['touchstart', 'touchmove', 'touchend'];
       this._handlers = null;
       this._direction = options.DIRECTION;
-      this._callibration = null;
-      /**
-       * @type {{}}
-       */
-
+      this._calibration = null;
       this._callbacks = null;
       this._context = this;
+      this._id = 0;
+      this.events = ['touchstart', 'touchmove', 'touchend'];
 
       this._setCalibration(this._direction, bound);
     } // enum
@@ -1852,32 +1879,32 @@
       var movefn = this._callbacks ? this._callbacks[MOVE] : def;
       var endfn = this._callbacks ? this._callbacks[END] : def;
 
-      var startHandler = function startHandler(e) {
-        if (_this._direction !== null) {
-          _this._callibration.start(e, startfn);
-        } else {
-          _this.deactivate();
+      var startHandler = function startHandler(touchEvent) {
+        var activity = _this._drawerManager.getRunningActivity();
+
+        if (_this._calibration && (_this._id && activity && activity.id === _this._id || !activity && _this._isCoolSignal(_this._getSignal(touchEvent)))) {
+          _this._calibration.start(touchEvent, startfn);
         }
       };
 
-      var moveHandler = function moveHandler(e) {
-        if (_this._direction !== null) {
-          _this._callibration.move(e, movefn);
-        } else {
-          _this.deactivate();
+      var moveHandler = function moveHandler(touchEvent) {
+        var activity = _this._drawerManager.getRunningActivity();
+
+        if (_this._calibration && activity && activity.id === _this._id) {
+          _this._calibration.move(touchEvent, movefn);
         }
       };
 
-      var endHandler = function endHandler(e) {
-        if (_this._direction !== null) {
+      var endHandler = function endHandler(touchEvent) {
+        var activity = _this._drawerManager.getRunningActivity();
+
+        if (_this._calibration && activity && activity.id === _this._id) {
           var state = {};
 
-          _this._callibration.end(e, endfn, state); // state by Ref
+          _this._calibration.end(touchEvent, endfn, state); // state by Ref
 
 
           _this._processThresholdState(state);
-        } else {
-          _this.deactivate();
         }
       };
 
@@ -1901,7 +1928,7 @@
       this._register(null);
     }
     /**
-     * A function used to register callbacks for the `Drawer class` `touchstart`,
+     * A method used to register callbacks for the `Drawer class` `touchstart`,
      * `touchmove` and `touchend` event handlers.
      *
      * Always call `Drawer.on(...)` before `Drawer.activate()`.
@@ -1955,13 +1982,21 @@
     _proto.setContext = function setContext(ctx) {
       this._context = ctx;
 
-      this._callibration.setContext(ctx);
+      this._calibration.setContext(ctx);
 
       return this;
     };
 
+    _proto.setServiceID = function setServiceID(id) {
+      if (typeof id !== 'number') {
+        throw new TypeError('expected `id` to be a unique number');
+      }
+
+      this._id = id;
+    };
+
     _proto.toString = function toString() {
-      return '[object SnappedDrawer]';
+      return CLASS_TYPE;
     };
 
     _proto._processThresholdState = function _processThresholdState(state) {
@@ -1969,33 +2004,66 @@
         return;
       }
 
-      var thState = state.state[0];
-      var vector = state.stateObj.rect;
-      delete state.stateObj.rect;
+      var stateArray = state.state,
+          stateObj = state.stateObj,
+          service = state.service;
+      var rect = stateObj.rect;
 
-      this._callbacks[thState].call(this._context, state.state, state.stateObj, vector);
+      this._callbacks[stateArray[0]].call(this._context, service, stateArray, stateObj, rect);
     };
 
     _proto._setCalibration = function _setCalibration(point, bound) {
       switch (point) {
         case SnappedDrawer.UP:
-          this._callibration = new Top(this._options, bound);
+          this._calibration = new Top(this._options, bound);
           break;
 
         case SnappedDrawer.LEFT:
-          this._callibration = new Left(this._options, bound);
+          this._calibration = new Left(this._options, bound);
           break;
 
         case SnappedDrawer.DOWN:
-          this._callibration = new Bottom(this._options, bound);
+          this._calibration = new Bottom(this._options, bound);
           break;
 
         case SnappedDrawer.RIGHT:
-          this._callibration = new Right(this._options, bound);
+          this._calibration = new Right(this._options, bound);
           break;
 
         default:
           throw RangeError('Direction out of range');
+      }
+    };
+
+    _proto._isCoolSignal = function _isCoolSignal(signal) {
+      var size = this._direction === SnappedDrawer.UP || this._direction === SnappedDrawer.DOWN ? WINDOW.screen.height : WINDOW.screen.width;
+
+      switch (this._direction) {
+        case SnappedDrawer.UP:
+        case SnappedDrawer.LEFT:
+          return signal <= size / 2;
+
+        case SnappedDrawer.RIGHT:
+        case SnappedDrawer.DOWN:
+          return signal > size / 2;
+
+        default:
+          return false;
+      }
+    };
+
+    _proto._getSignal = function _getSignal(emitter) {
+      switch (this._direction) {
+        case SnappedDrawer.UP:
+        case SnappedDrawer.DOWN:
+          return emitter.changedTouches[0].clientY;
+
+        case SnappedDrawer.LEFT:
+        case SnappedDrawer.RIGHT:
+          return emitter.changedTouches[0].clientX;
+
+        default:
+          return null;
       }
     };
 
@@ -2007,8 +2075,7 @@
       if (event in this._callbacks) {
         this._callbacks[event] = fn;
       }
-    } // private
-    ;
+    };
 
     _proto._register = function _register() {
       for (var _len = arguments.length, handlers = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -2033,6 +2100,28 @@
     return false;
   }
 
+  var DrawerManagementStore =
+  /*#__PURE__*/
+  function () {
+    function DrawerManagementStore() {
+      this.activities = [];
+    }
+
+    var _proto = DrawerManagementStore.prototype;
+
+    _proto.pushActivity = function pushActivity(activity) {
+      this.activities.push(activity);
+    };
+
+    _proto.getRunningActivity = function getRunningActivity() {
+      return this.activities.find(function (activity) {
+        return activity.isRunning();
+      });
+    };
+
+    return DrawerManagementStore;
+  }();
+
   var Drawer = function Drawer() {};
 
   _defineProperty(Drawer, "SnappedDrawer", SnappedDrawer);
@@ -2044,6 +2133,8 @@
   _defineProperty(Drawer, "DOWN", SnappedDrawer.DOWN);
 
   _defineProperty(Drawer, "RIGHT", SnappedDrawer.RIGHT);
+
+  _defineProperty(Drawer, "DrawerManagementStore", new DrawerManagementStore());
 
   var Backdrop =
   /*#__PURE__*/
@@ -2087,85 +2178,27 @@
     return Backdrop;
   }();
 
-  var STATE = {
-    navstate: null
-  };
-
-  var HashState =
-  /*#__PURE__*/
-  function () {
-    function HashState(parentService, options) {
-      this.options = options;
-      this.parentService = parentService;
-      this.button = options.INIT_ELEM;
-      this.event = 'hashchange';
-      this.handler = null;
-    }
-
-    var _proto = HashState.prototype;
-
-    _proto.activate = function activate() {
-      var _this = this;
-
-      var handler = function handler(e) {
-        _this._hashchange(e);
-      };
-
-      this._register(handler);
-
-      window.addEventListener(this.event, this.handler);
-      return 0;
-    };
-
-    _proto.deactivate = function deactivate() {
-      window.removeEventListener(this.event, this.handler);
-
-      this._register(null);
-
-      return 0;
-    };
-
-    _proto._hashchange = function _hashchange(e) {
-      var oldHash = HashState._getHash(e.oldURL);
-
-      if (oldHash === getAttribute(this.button, 'href') && STATE.navstate && STATE.navstate.alive) {
-        this.parentService._close();
-      }
-    };
-
-    _proto._register = function _register(handler) {
-      this.handler = handler;
-    };
-
-    HashState._getHash = function _getHash(uri) {
-      var hash = uri;
-      var indexOfHash = hash.lastIndexOf('#');
-      hash = indexOfHash !== -1 ? hash.slice(indexOfHash).replace(/(?:[^\w\d-]+)$/) : null;
-      return hash;
-    };
-
-    return HashState;
-  }();
-
-  var ZERO$2 = 0;
+  var ZERO$1 = 0;
   var KILO = 1e3;
   var MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.5;
   var MIN_POSITIVE_DISPLACEMENT = 10;
   var MIN_NEGATIVE_DISPLACEMENT = -MIN_POSITIVE_DISPLACEMENT;
-  var TRANSITION_STYLE = 'linear';
+  var TRANSITION_STYLE = 'linear'; // 'cubic-bezier(0, 0.5, 0, 1)'
+
   var EFFECT = 'transition';
   var OVERFLOW = 'overflow';
   var TRANS_TIMING = '0.1s';
   var TRANS_TEMPLATE = TRANSITION_STYLE + " " + TRANS_TIMING;
   var HIDDEN = 'hidden';
   var SCROLL = 'scroll';
+  var AUTO = 'auto';
   var HREF = 'href';
   var HASH_ATTR = "data-" + HREF;
   var START$1 = 'start';
   var MOVE$1 = 'move';
   var THRESHOLD$5 = 'threshold';
   var BELOW_THRESHOLD$5 = "below" + THRESHOLD$5;
-  var MAX_TIME = KILO;
+  var MIN_SPEED = 100;
   var MAX_SPEED = 500;
 
   var NavDrawer =
@@ -2177,9 +2210,11 @@
      * Support for Top and Bottom may come in the future
      * @throws RangeError
      * @param {{}} options An options Object to configure the Drawer with
+     * @param {{}} state An activity and service manager
      */
-    function NavDrawer(options) {
+    function NavDrawer(options, state) {
       this.options = options;
+      this.state = state;
       this.element = this.options.ELEMENT;
       this._body = this.options.BODY;
       this._backdrop = this.options.BACKDROP;
@@ -2195,7 +2230,8 @@
         TARGET: document
       });
 
-      this.drawer = new Drawer.SnappedDrawer(o, this.bound);
+      this.drawer = new Drawer.SnappedDrawer(o, this.bound, Drawer.DrawerManagementStore);
+      Drawer.DrawerManagementStore.pushActivity(this.state.activity);
       this.transition = this.directionString + " " + TRANS_TEMPLATE;
     }
 
@@ -2203,6 +2239,7 @@
 
     _proto.activate = function activate() {
       this.drawer.on(START$1, this._startHandler).on(MOVE$1, this._moveHandler).on(THRESHOLD$5, this._threshold).on(BELOW_THRESHOLD$5, this._belowThreshold).setContext(this).activate();
+      this.drawer.setServiceID(this.state.activity.id);
       return 0;
     };
 
@@ -2211,21 +2248,24 @@
       return 0;
     };
 
-    _proto._startHandler = function _startHandler(response) {
+    _proto._startHandler = function _startHandler(service, response) {
       var _css;
 
+      service.lock();
+      this.state.activity.run();
       css(this.element, (_css = {}, _css[this.directionString] = response.dimension, _css.boxShadow = NAV_BOX_SHADOW[this.directionString], _css[EFFECT] = this.transition, _css));
       this._body.style.overflow = HIDDEN;
     };
 
-    _proto._moveHandler = function _moveHandler(response, rectangle) {
+    _proto._moveHandler = function _moveHandler(service, response, rectangle) {
       var _css2;
 
+      service.lock();
       var curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2;
       css(this.element, (_css2 = {}, _css2[this.directionString] = response.dimension, _css2[EFFECT] = 'none', _css2[OVERFLOW] = HIDDEN, _css2));
 
       if (this.direction === Drawer.RIGHT) {
-        var WIN_SIZE = window.screen.availWidth;
+        var WIN_SIZE = WINDOW.screen.width;
         curPos = WIN_SIZE - curPos;
 
         this._backdrop.setOpacity(curPos / this.elementSize);
@@ -2236,11 +2276,12 @@
       this._backdrop.setOpacity(curPos / this.elementSize);
     };
 
-    _proto._threshold = function _threshold(state, stateObj) {
+    _proto._threshold = function _threshold(service, state, stateObj, rect) {
+      service.lock();
       var isOpen = state[1] === 'open';
       var options = {
         stateObj: stateObj,
-        transition: this.directionString + " ease " + this._calcSpeed(stateObj.TIMING) / KILO + "s"
+        transition: this.directionString + " " + TRANSITION_STYLE + " " + this._calcSpeed(stateObj.TIMING, rect.width) / KILO + "s"
       };
 
       if (isOpen) {
@@ -2250,7 +2291,8 @@
       }
     };
 
-    _proto._belowThreshold = function _belowThreshold(state, stateObj, rect) {
+    _proto._belowThreshold = function _belowThreshold(service, state, stateObj, rect) {
+      service.lock();
       var isClosed = state[1] !== 'open';
       var overallEventTime = stateObj.TIMING;
       var MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD;
@@ -2259,38 +2301,37 @@
       var displacement = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rect.displacementY : rect.displacementX;
       var options = {
         stateObj: stateObj,
-        transition: this.directionString + " ease " + this._calcSpeed(stateObj.TIMING) / KILO + "s"
+        transition: this.directionString + " " + TRANSITION_STYLE + " " + this._calcSpeed(stateObj.TIMING, rect.width) / KILO + "s"
       };
       var LOGIC;
 
       if (this.direction === Drawer.LEFT && isClosed || this.direction === Drawer.RIGHT && !isClosed) {
-        LOGIC = displacement > ZERO$2 && displacement >= MPD && rect.greaterWidth;
+        LOGIC = displacement > ZERO$1 && displacement >= MPD && rect.greaterWidth;
       } else {
-        LOGIC = displacement < ZERO$2 && displacement <= MND && rect.greaterWidth;
+        LOGIC = displacement < ZERO$1 && displacement <= MND && rect.greaterWidth;
       }
 
       if (overallEventTime / KILO < MTTOB) {
-        // DIRECTION: Drawer.UP | Drawer.LEFT
         if (LOGIC) {
           this._overrideBelowThresh(!isClosed, options);
         } else {
           if (isClosed) {
-            // close it back didn't hit thresh. and can't override
+            // Close it. Can't override
             this._hide(options);
 
             return;
-          } // open it back didn't hit thresh. and can't override because not enough displacement
+          } // Open it. Can't override. Not enough displacement
 
 
           this._show(options);
         }
       } else {
         if (isClosed) {
-          // close it back didn't hit thresh. and can't override because not enough velocity or displacement
+          // close it
           this._hide(options);
 
           return;
-        } // open it back didn't hit thresh. and can't override because not enough velocity or displacement
+        } // open it
 
 
         this._show(options);
@@ -2324,68 +2365,80 @@
     _proto._hidePrep = function _hidePrep(options) {
       var _css3;
 
+      this.state.activity.derun();
       this._body.style.overflow = SCROLL;
 
       this._backdrop.hide(this.options.TRANSITION);
 
-      css(this.element, (_css3 = {}, _css3[EFFECT] = options.transition, _css3[OVERFLOW] = SCROLL, _css3));
+      css(this.element, (_css3 = {}, _css3[EFFECT] = options.transition, _css3[OVERFLOW] = AUTO, _css3));
 
       if (!this.bound.lower) {
         this.element.style.boxShadow = 'none';
       }
 
-      this._setState('open');
+      this._setState('close'); // callback for when nav is hidden
+
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)();
+      }
     };
 
     _proto._showPrep = function _showPrep(options) {
       var _css4;
 
-      window.location.hash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR);
+      var buttonHash = getAttribute(this.options.INIT_ELEM, HREF) || getData(this.options.INIT_ELEM, HASH_ATTR);
+
+      if (buttonHash) {
+        WINDOW.location.hash = buttonHash;
+      }
+
       this._body.style.overflow = HIDDEN;
 
       this._backdrop.show(this.options.TRANSITION);
 
-      css(this.element, (_css4 = {}, _css4[EFFECT] = options.transition, _css4[OVERFLOW] = SCROLL, _css4));
+      css(this.element, (_css4 = {}, _css4[EFFECT] = options.transition, _css4[OVERFLOW] = AUTO, _css4));
 
-      this._setState('open');
+      this._setState('open'); // callback for when nav is shown
+
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.show)();
+      }
     };
 
-    _proto._calcSpeed = function _calcSpeed(time) {
-      if (time >= MAX_TIME) {
-        return MAX_SPEED;
+    _proto._calcSpeed = function _calcSpeed(time, distance) {
+      var distanceRemain = this.elementSize - distance;
+
+      if (~Math.sign(distanceRemain)) {
+        var newTime = distanceRemain * time / distance;
+
+        if (newTime > MAX_SPEED) {
+          newTime = MAX_SPEED;
+        } else if (newTime < MIN_SPEED) {
+          newTime = MIN_SPEED;
+        }
+
+        return newTime;
       }
 
-      var percent = 100;
-      var percentage = time / MAX_TIME * percent;
-      return percentage / percent * MAX_SPEED;
+      return 0;
     };
 
     _proto._checkDirection = function _checkDirection() {
       if (this.direction !== Drawer.LEFT && this.direction !== Drawer.RIGHT) {
-        throw RangeError('Direction out of range');
+        throw new RangeError('Direction out of range');
       }
     };
 
     _proto._setState = function _setState(mode) {
       switch (mode) {
         case 'open':
-          STATE.navstate = {
-            alive: true,
-            activity: {
-              service: this,
-              action: mode
-            }
-          };
+          this.state.activity.run();
           break;
 
         case 'close':
-          STATE.navstate = {
-            alive: false,
-            activity: {
-              service: this,
-              action: mode
-            }
-          };
+          this.state.activity.derun();
           break;
 
         default:
@@ -2411,9 +2464,15 @@
     }, {
       key: "_bound",
       get: function get() {
-        var curPos = css(this.element, this.directionString).replace(/[^\d]*$/, '');
         var upperBound = this.elementSize;
-        var lowerBound = upperBound + parseInt(curPos, 10);
+
+        if (this.direction === Drawer.RIGHT) {
+          var _lowerBound = WINDOW.screen.width - this.element.offsetLeft;
+
+          return new Bound(_lowerBound, upperBound);
+        }
+
+        var lowerBound = upperBound + this.element.offsetLeft;
         return new Bound(lowerBound, upperBound);
       }
     }]);
@@ -2421,17 +2480,19 @@
     return NavDrawer;
   }();
 
-  var TRANSITION_STYLE$1 = 'ease';
+  var TRANSITION_STYLE$1 = 'cubic-bezier(0, 0.5, 0, 1)';
   var EFFECT$1 = 'transition';
   var TRANS_END = 'transitionend';
 
   var NavService =
   /*#__PURE__*/
   function () {
-    function NavService(options) {
+    function NavService(options, state) {
       this.options = options;
+      this.state = state;
       this.nav = options.ELEMENT;
       this.button = options.INIT_ELEM;
+      this.body = options.BODY;
       this.backdrop = options.BACKDROP;
       this.backdropElement = this.backdrop.backdrop;
       this.event = 'click';
@@ -2446,7 +2507,7 @@
        * @private
        */
 
-      this._closeClicked = false;
+      this._closeInvoked = false;
       /**
        * @readonly
        * @private
@@ -2461,8 +2522,8 @@
     _proto.activate = function activate() {
       var _this = this;
 
-      var ClickHandler = function ClickHandler(e) {
-        _this.handler(e);
+      var ClickHandler = function ClickHandler(mouseEvent) {
+        _this.handler(mouseEvent);
       };
 
       var BackdropHandler = function BackdropHandler() {
@@ -2470,10 +2531,10 @@
       };
 
       var TransitionHandler = function TransitionHandler() {
-        if (!_this.alive && _this._closeClicked) {
+        if (!_this.alive && _this._closeInvoked) {
           _this._cleanShadow();
 
-          _this._closeClicked = false;
+          _this._closeInvoked = false;
         }
       };
 
@@ -2494,7 +2555,7 @@
     };
 
     _proto.deactivate = function deactivate() {
-      throw new ReferenceError('cannot deactivate API specified as default. This service must be kept running');
+      throw new ReferenceError('cannot deactivate a default service. This service must be kept running');
     };
 
     _proto.forceDeactivate = function forceDeactivate() {
@@ -2508,13 +2569,18 @@
       this._register(null);
     };
 
-    _proto.handler = function handler(e) {
-      e.preventDefault();
-      window.location.hash = getAttribute(this.button, 'href');
+    _proto.handler = function handler(mouseEvent) {
+      mouseEvent.preventDefault();
 
       var state = NavService._toNum(NavService.css(this.nav, this.direction));
 
-      if (state < ZERO$1) {
+      if (state < ZERO) {
+        var buttonHash = getAttribute(this.button, 'href') || getData(this.button, 'data-href');
+
+        if (buttonHash) {
+          WINDOW.location.hash = buttonHash;
+        }
+
         this._open();
       } else {
         this._close();
@@ -2542,18 +2608,17 @@
     _proto._open = function _open() {
       var _style;
 
-      var style = (_style = {}, _style[this.direction] = ZERO$1, _style[EFFECT$1] = this.transition, _style.boxShadow = NAV_BOX_SHADOW[this.direction], _style);
+      var style = (_style = {}, _style[this.direction] = ZERO, _style[EFFECT$1] = this.transition, _style.boxShadow = NAV_BOX_SHADOW[this.direction], _style);
       NavService.css(this.nav, style);
       this.backdrop.show(this.options.TRANSITION);
+      NavService.css(this.body, 'overflow', 'hidden'); // callback for when nav is shown
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.show)();
+      }
+
       this.alive = true;
-      var state = {
-        alive: this.alive,
-        activity: {
-          service: this,
-          action: 'open'
-        }
-      };
-      STATE.navstate = state;
+      this.state.activity.run();
     };
 
     _proto._close = function _close() {
@@ -2562,16 +2627,15 @@
       var style = (_style2 = {}, _style2[this.direction] = this._initialState, _style2[EFFECT$1] = this.transition, _style2);
       NavService.css(this.nav, style);
       this.backdrop.hide(this.options.TRANSITION);
+      NavService.css(this.body, 'overflow', 'initial'); // callback for when nav is hidden
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)();
+      }
+
       this.alive = false;
-      this._closeClicked = true;
-      var state = {
-        alive: this.alive,
-        activity: {
-          service: this,
-          action: 'close'
-        }
-      };
-      STATE.navstate = state;
+      this._closeInvoked = true;
+      this.state.activity.derun();
     };
 
     _proto._cleanShadow = function _cleanShadow() {
@@ -2581,16 +2645,135 @@
     return NavService;
   }();
 
+  var PopService =
+  /*#__PURE__*/
+  function () {
+    function PopService(parentService, options, state) {
+      this.options = options;
+      this.state = state;
+      this.parentService = parentService;
+      this.button = options.INIT_ELEM;
+      this.event = 'hashchange';
+      this.handler = null;
+    }
+
+    var _proto = PopService.prototype;
+
+    _proto.activate = function activate() {
+      var _this = this;
+
+      var handler = function handler(hashChangeEvent) {
+        _this._hashchange(hashChangeEvent);
+      };
+
+      this._register(handler);
+
+      WINDOW.addEventListener(this.event, this.handler, true);
+      return 0;
+    };
+
+    _proto.deactivate = function deactivate() {
+      WINDOW.removeEventListener(this.event, this.handler, true);
+
+      this._register(null);
+
+      return 0;
+    }
+    /**
+     * @param {HashChangeEvent} hashChangeEvent Event object
+     * @returns {void}
+     */
+    ;
+
+    _proto._hashchange = function _hashchange(hashChangeEvent) {
+      var oldHash = PopService._getHash(hashChangeEvent.oldURL);
+
+      if (oldHash === (getAttribute(this.button, 'href') || getData(this.button, 'data-href')) && this.state.activity.isRunning()) {
+        hashChangeEvent.stopImmediatePropagation();
+
+        this.parentService._close();
+      }
+    };
+
+    _proto._register = function _register(handler) {
+      this.handler = handler;
+    };
+
+    PopService._getHash = function _getHash(uri) {
+      var hash = uri;
+      var indexOfHash = hash.lastIndexOf('#');
+      hash = indexOfHash !== -1 ? hash.slice(indexOfHash).replace(/(?:[^\w\d-]+)$/) : null;
+      return hash;
+    };
+
+    return PopService;
+  }();
+
+  var EventInterface = {
+    SHOW: 'show',
+    HIDE: 'hide'
+  };
+
+  var State =
+  /*#__PURE__*/
+  function () {
+    function State(activity) {
+      var _this$_stateEventRegi;
+
+      this.activity = activity; // activity manager
+
+      this._stateEventRegistry = (_this$_stateEventRegi = {}, _this$_stateEventRegi[EventInterface.SHOW] = null, _this$_stateEventRegi[EventInterface.HIDE] = null, _this$_stateEventRegi);
+    }
+
+    var _proto = State.prototype;
+
+    _proto.getStateEventHandler = function getStateEventHandler(type) {
+      if (Object.values(EventInterface).indexOf(type) !== -1) {
+        return this._stateEventRegistry[type];
+      }
+
+      throw new Error('unknown event type');
+    };
+
+    _proto.isRegisteredEvent = function isRegisteredEvent(type) {
+      return typeof this._stateEventRegistry[type] === 'function';
+    };
+
+    _createClass(State, [{
+      key: "onshow",
+      set: function set(val) {
+        if (typeof val !== 'function') {
+          throw new TypeError('value is not a callable type');
+        }
+
+        this._stateEventRegistry.show = val;
+        return true;
+      }
+    }, {
+      key: "onhide",
+      set: function set(val) {
+        if (typeof val !== 'function') {
+          throw new TypeError('value is not a callable type');
+        }
+
+        this._stateEventRegistry.hide = val;
+        return true;
+      }
+    }]);
+
+    return State;
+  }();
+
   var BACKDROP = 'backdrop';
-  var DEF_CLASSNAME = 'cardinal-navcard';
-  var MEDIA_HASH = 'data-hash-max-width';
-  var MEDIA_DRAW = 'data-draw-max-width';
-  var _CLASS = 'class';
+  var MEDIA_DRAW = 'data-max-width';
+  var CLASS_TYPE$1 = '[object NavCard]';
+  var NAME = 'Nav';
+  var NAV = WINDOW[NAME] || null;
 
   var NavCard =
   /*#__PURE__*/
   function () {
-    function NavCard() {
+    function NavCard(src, dest) {
       /**
        * Covert Backdrop
        * ----------------
@@ -2614,26 +2797,24 @@
         top: 0,
         left: 0
       });
+      this.src = src;
+      this.dest = dest;
       this.body = document.body;
       this.Drawer = null;
-      this.NavService = null;
-      this.HashState = null;
+      this.SheetService = null;
+      this.PopService = null;
+      this._Activity = new ActivityManager(this);
+      this.State = new State(this._Activity);
     }
 
     var _proto = NavCard.prototype;
 
-    _proto.setup = function setup(el, options) {
-      if (!el) {
-        throw new TypeError('expected \'el\' to be selector string or HTMLElement');
+    _proto.setup = function setup(options) {
+      if (!this.src) {
+        throw new TypeError("expected " + NAME + " to be constructed with at least 'src' argument:\n        expected 'src' to be selector string or HTMLElement.\n          constructor(src: string | HTMLElement, dest?: string | HTMLElement)");
       }
 
-      var _ = 1,
-          backdrop = _.backdrop,
-          HASH_NAV_MAX_WIDTH = _.HASH_NAV_MAX_WIDTH,
-          NAV_DRAW_MAX_WIDTH = _.NAV_DRAW_MAX_WIDTH,
-          destinationId = _.destinationId,
-          destination = _.destination;
-      var opts = NavCard.defaultConfig;
+      var opts = typeof Object.assign === 'function' ? Object.assign({}, NavCard.defaultConfig) : _extends({}, NavCard.defaultConfig);
 
       if (options && typeof options === 'object') {
         var _arr = Object.keys(options);
@@ -2649,86 +2830,93 @@
         }
       }
 
-      var dataAccess = opts.accessAttr;
-      /**
-       * Initialization element e.g <button ...</button>
-       */
+      this.dest = this.dest ? this.dest : opts.dest;
+      var srcEl = this.src instanceof HTMLElement ? this.src : $(this.src);
+      var destEl = this.dest instanceof HTMLElement ? this.dest : $(this.dest);
+      var maxWidth = getData(destEl, MEDIA_DRAW);
 
-      var element = el instanceof HTMLElement ? el : $(el);
-      destinationId = getData(element, dataAccess); // check if the data-* attribute value is a valid css selector
-      // if not prepend a '#' to it as id selector is default
-
-      var isCSSSelector = /^(?:#|\.|\u005b[^\u005c]\u005c)/.test(destinationId);
-      var isClass = /^\./.test(destinationId);
-      destinationId = isCSSSelector ? destinationId : "#" + destinationId;
-      destination = $(destinationId); // we want a class too, so in case we've got an id selector
-      // find the classname or assign a unique class
-
-      var defaultClass = DEF_CLASSNAME + "-" + unique(2 << 7); // eslint-disable-next-line no-nested-ternary
-
-      var classname = isClass ? destinationId : hasAttribute(destination, _CLASS) ? getAttribute(destination, _CLASS) : (setAttribute(destination, _CLASS, defaultClass), defaultClass);
-      var classlist = classname.split(/\s+/); // eslint-disable-next-line prefer-template
-
-      classname = '.' + (classlist.length >= 2 ? classlist[0] + '.' + classlist[1] : classname);
-      destination = isClass ? destination : $(classname);
-
-      if (opts.backdrop) {
-        var backdropclass = opts.backdropClass || false; // if `opts.backdrop` and no `backdropclass` given
-        // append our custom backdrop
+      if (opts.useBackdrop) {
+        var backdropclass = opts.backdrop || false; // if `opts.useBackdrop` and no `backdrop` given
+        // append a custom backdrop
 
         if (!backdropclass) {
-          destination.insertAdjacentElement('beforeBegin', this.backdrop);
-        }
-
-        if (typeof backdropclass === 'string') {
+          destEl.insertAdjacentElement('beforeBegin', this.backdrop);
+        } else if (typeof backdropclass === 'string') {
           // check if backdropclass is normal string or css class selector
-          backdrop = /^\./.test(backdropclass) ? backdropclass : "." + backdropclass;
+          var backdrop = /^\./.test(backdropclass) ? backdropclass : "." + backdropclass;
           this.backdrop = $(backdrop);
+        } else if (backdropclass instanceof HTMLElement) {
+          this.backdrop = backdropclass;
+        } else {
+          throw new TypeError('expected \'options.backdrop\' to be a selector string or HTMLElement.');
         }
       }
 
-      HASH_NAV_MAX_WIDTH = getData(destination, MEDIA_HASH);
-      NAV_DRAW_MAX_WIDTH = getData(destination, MEDIA_DRAW);
-      HASH_NAV_MAX_WIDTH = /px$/.test(HASH_NAV_MAX_WIDTH) ? HASH_NAV_MAX_WIDTH : HASH_NAV_MAX_WIDTH + "px";
-      NAV_DRAW_MAX_WIDTH = /px$/.test(NAV_DRAW_MAX_WIDTH) ? NAV_DRAW_MAX_WIDTH : NAV_DRAW_MAX_WIDTH + "px";
+      maxWidth = /px$/.test(maxWidth) ? maxWidth : maxWidth + "px";
       var defaultOptions = {
-        ELEMENT: destination,
-        INIT_ELEM: element,
+        ELEMENT: destEl,
+        INIT_ELEM: srcEl,
         BACKDROP: new Backdrop(this.backdrop),
         BODY: this.body,
         TRANSITION: opts.transition,
         DIRECTION: DIRECTIONS[opts.direction],
-        unit: options.unit
+        unit: opts.unit
       };
 
       var drawerOptions = _extends({}, defaultOptions, {
-        MAX_WIDTH: NAV_DRAW_MAX_WIDTH,
+        MAX_WIDTH: maxWidth,
         DIRECTION: opts.direction,
         maxStartArea: opts.maxStartArea,
-        threshold: opts.threshold
+        threshold: opts.threshold,
+        scrollableContainer: opts.scrollableContainer,
+        CustomDrawer: opts.CustomDrawer
       });
 
-      var hashOptions = _extends({}, defaultOptions, {
-        MAX_WIDTH: HASH_NAV_MAX_WIDTH
-      });
-
-      return new NavMountWorker(Object.assign({}, {
-        defaultOptions: defaultOptions
-      }, {
-        drawerOptions: drawerOptions
-      }, {
+      var hashOptions = {
+        INIT_ELEM: defaultOptions.INIT_ELEM
+      };
+      return new NavMountWorker(this, {
+        defaultOptions: defaultOptions,
+        drawerOptions: drawerOptions,
         hashOptions: hashOptions
-      }));
+      });
+    };
+
+    _proto.terminate = function terminate(service) {
+      service |= 0;
+
+      if (service & NavCard.SERVICES.Default && this.SheetService instanceof NavService) {
+        this.SheetService.deactivate();
+      }
+
+      if (service & NavCard.SERVICES.Drawer && this.Drawer instanceof NavDrawer) {
+        this.Drawer.deactivate();
+      }
+
+      if (service & NavCard.SERVICES.Hash && this.PopService instanceof PopService) {
+        this.PopService.deactivate();
+      }
+
+      if (!service) {
+        throw new Error('a service id is required');
+      }
     };
 
     _proto.toString = function toString() {
-      return '[object NavCard]';
+      return CLASS_TYPE$1;
+    };
+
+    NavCard.namespace = function namespace(name) {
+      WINDOW[name] = WINDOW[name] || {};
+      WINDOW[name][NAME] = NavCard;
+      WINDOW[NAME] = NAV;
     };
 
     _proto._drawerAPI = function _drawerAPI(options) {
       var _this = this;
 
-      this.Drawer = new NavDrawer(options);
+      var Drawer = options.CustomDrawer;
+      this.Drawer = Drawer && typeof Drawer === 'object' ? new Drawer(options, this.State) : new NavDrawer(options, this.State);
       return {
         activate: function activate() {
           return _this.Drawer.activate();
@@ -2742,13 +2930,13 @@
     _proto._hashAPI = function _hashAPI(options) {
       var _this2 = this;
 
-      this.HashState = new HashState(this.NavService, options);
+      this.PopService = new PopService(this.SheetService, options, this.State);
       return {
         activate: function activate() {
-          return _this2.HashState.activate();
+          return _this2.PopService.activate();
         },
         deactivate: function deactivate() {
-          return _this2.HashState.deactivate();
+          return _this2.PopService.deactivate();
         }
       };
     };
@@ -2756,44 +2944,15 @@
     _proto._defaultAPI = function _defaultAPI(options) {
       var _this3 = this;
 
-      this.NavService = new NavService(options);
+      this.SheetService = new NavService(options, this.State);
       return {
         activate: function activate() {
-          return _this3.NavService.activate();
+          return _this3.SheetService.activate();
         },
         deactivate: function deactivate() {
-          return _this3.NavService.deactivate();
+          return _this3.SheetService.deactivate();
         }
       };
-    };
-
-    _proto.terminate = function terminate(service) {
-      // this._*API(null).deactivate()
-      switch (service) {
-        case NavCard.SERVICES.Default:
-          if (this.NavService instanceof NavService) {
-            this.NavService.deactivate();
-          }
-
-          break;
-
-        case NavCard.SERVICES.Drawer:
-          if (this.Drawer instanceof NavDrawer) {
-            this.Drawer.deactivate();
-          }
-
-          break;
-
-        case NavCard.SERVICES.Hash:
-          if (this.HashState instanceof HashState) {
-            this.HashState.deactivate();
-          }
-
-          break;
-
-        default:
-          throw new Error('a service id is required');
-      }
     };
 
     return NavCard;
@@ -2801,62 +2960,843 @@
 
   _defineProperty(NavCard, "defaultConfig", {
     transition: 500,
-    direction: 'left',
-    backdrop: false,
-    backdropClass: null,
-    accessAttr: 'data-target',
+    direction: -1,
+    useBackdrop: false,
+    backdrop: null,
+    dest: null,
+    scrollableContainer: null,
     maxStartArea: 25,
     threshold: 1 / 2,
-    unit: 'px'
+    unit: 'px',
+    CustomDrawer: null
   });
 
   _defineProperty(NavCard, "SERVICES", {
-    Default: 2,
-    Drawer: 4,
-    Hash: 8
+    Default: 0x20,
+    Drawer: 0x40,
+    Pop: 0x80
   });
 
   var NavMountWorker =
   /*#__PURE__*/
-  function (_NavCard) {
-    _inheritsLoose(NavMountWorker, _NavCard);
-
-    function NavMountWorker(options) {
-      var _this4;
-
-      _this4 = _NavCard.call(this) || this;
-      _this4.options = options;
-      return _this4;
+  function () {
+    function NavMountWorker(borrowedContext, options) {
+      this.$this = borrowedContext;
+      this.options = options;
     }
 
     var _proto2 = NavMountWorker.prototype;
 
     _proto2.mount = function mount() {
-      this._defaultAPI(this.options.defaultOptions).activate();
+      var _this4 = this;
 
-      this._drawerAPI(this.options.drawerOptions).activate();
+      var DEFAULT_ACTIVE = !this.$this._defaultAPI(this.options.defaultOptions).activate();
+      var DRAWER_ACTIVE = !this.$this._drawerAPI(this.options.drawerOptions).activate();
+      var HASH_ACTIVE = !this.$this._hashAPI(this.options.hashOptions).activate();
+      return new Promise(function (resolve, reject) {
+        if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
+          reject(new Error('one or more services could not activate'));
+          return;
+        }
 
-      this._hashAPI(this.options.hashOptions).activate();
+        resolve(new NavStateEvent(_this4.$this, _this4.$this.State));
+      });
     };
 
     _proto2.unmount = function unmount() {
-      this.NavService.forceDeactivate();
-      this.Drawer.deactivate();
-      this.HashState.deactivate();
+      this.$this.SheetService.forceDeactivate();
+      this.$this.Drawer.deactivate();
+      this.$this.PopService.deactivate();
+    };
+
+    _proto2.toString = function toString() {
+      return '[object NavMountWorker]';
     };
 
     return NavMountWorker;
+  }();
+
+  var NavStateEvent =
+  /*#__PURE__*/
+  function () {
+    function NavStateEvent($this, state) {
+      _defineProperty(this, "events", [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide]);
+
+      this.$this = $this;
+      this._State = state;
+    }
+
+    var _proto3 = NavStateEvent.prototype;
+
+    _proto3.on = function on(event, handle) {
+      if (handle === void 0) {
+        handle = function handle() {
+          return false;
+        };
+      }
+
+      if (!(this.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      this._State["on" + event] = handle.bind(this.$this);
+    };
+
+    _proto3.off = function off(event) {
+      if (!(this.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      this._State["on" + event] = null;
+    };
+
+    return NavStateEvent;
+  }();
+
+  var ZERO$2 = 0;
+  var KILO$1 = 1e3;
+  var MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD$1 = 0.1;
+  var MIN_POSITIVE_DISPLACEMENT$1 = 15;
+  var MIN_NEGATIVE_DISPLACEMENT$1 = -MIN_POSITIVE_DISPLACEMENT$1;
+  var TRANSITION_STYLE$2 = 'linear';
+  var EFFECT$2 = 'transition';
+  var OVERFLOW$1 = 'overflow';
+  var TRANS_TIMING$1 = '0.1s';
+  var TRANS_TEMPLATE$1 = TRANSITION_STYLE$2 + " " + TRANS_TIMING$1;
+  var HIDDEN$1 = 'hidden';
+  var SCROLL$1 = 'scroll';
+  var AUTO$1 = 'auto';
+  var HREF$1 = 'href';
+  var HASH_ATTR$1 = "data-" + HREF$1;
+  var START$2 = 'start';
+  var MOVE$2 = 'move';
+  var THRESHOLD$6 = 'threshold';
+  var BELOW_THRESHOLD$6 = "below" + THRESHOLD$6;
+  var MAX_TIME = KILO$1;
+  var MAX_SPEED$1 = 500;
+  var MarkIndex = {
+    high: 'high',
+    mid: 'mid',
+    low: 'low'
+  };
+
+  var SheetDrawer =
+  /*#__PURE__*/
+  function () {
+    /**
+     * Creates a new SheetDrawer object. Providing the Top and Bottom
+     * Drawer functionality
+     * @throws RangeError
+     * @param {{}} options An options Object to configure the Drawer with
+     * @param {State} state An activity and service manager
+     */
+    function SheetDrawer(options, state) {
+      var _this$marks;
+
+      this.options = options;
+      this.state = state;
+      this.element = this.options.ELEMENT;
+      this._body = this.options.BODY;
+      this.backdrop = this.options.BACKDROP;
+      this.direction = this.options.DIRECTION;
+      this._scCheck = this.options.scrollableContainer;
+      this._sc = this._scCheck || document.createElement('div');
+
+      this._checkDirection();
+
+      this.directionString = DIRECTIONS[this.direction];
+      this.bound = this._bound;
+      this._oldbound = null;
+
+      var o = _extends({}, options, {
+        SIZE: this.elementSize,
+        TARGET: document
+      });
+
+      this.drawer = new Drawer.SnappedDrawer(o, this.bound, Drawer.DrawerManagementStore);
+      Drawer.DrawerManagementStore.pushActivity(this.state.activity);
+      this.transition = this.directionString + " " + TRANS_TEMPLATE$1;
+      this.marks = (_this$marks = {}, _this$marks[MarkIndex.high] = ZERO$2, _this$marks[MarkIndex.mid] = this.bound.slack * resolveThreshold(options.threshold), _this$marks[MarkIndex.low] = document.documentElement.clientHeight - this.element.offsetTop - this.elementSize, _this$marks);
+      this._Control = {
+        touchMoveExited: false,
+        lastMetredPos: 0
+      };
+    }
+
+    var _proto = SheetDrawer.prototype;
+
+    _proto.activate = function activate() {
+      this.drawer.on(START$2, this._startHandler).on(MOVE$2, this._moveHandler).on(THRESHOLD$6, this._threshold).on(BELOW_THRESHOLD$6, this._belowThreshold).setContext(this).activate();
+      this.drawer.setServiceID(this.state.activity.id);
+      return 0;
+    };
+
+    _proto.deactivate = function deactivate() {
+      this.drawer.deactivate();
+      return 0;
+    };
+
+    _proto._startHandler = function _startHandler(service, response) {
+      var _css;
+
+      service.lock();
+      this.state.activity.run();
+      css(this.element, (_css = {}, _css[this.directionString] = !this.bound.lower ? response.dimension : null, _css.boxShadow = NAV_BOX_SHADOW[this.directionString], _css[EFFECT$2] = this.transition, _css));
+      this._body.style.overflow = HIDDEN$1;
+    };
+
+    _proto._moveHandler = function _moveHandler(service, response, rectangle) {
+      var _css2;
+
+      service.lock();
+      var WIN_SIZE = WINDOW.screen.height;
+      var curPos = rectangle.coordsY.y2;
+
+      if (response.posOnStart === this.marks[MarkIndex.high] && (this._scCheck && this._sc.scrollTop !== ZERO$2 || !this._scCheck)) {
+        this._Control.touchMoveExited = true;
+        this._Control.lastMetredPos = curPos;
+        return;
+      }
+
+      this._Control.touchMoveExited = false;
+      var customDimension = this.direction === Drawer.DOWN ? this._Control.lastMetredPos - curPos + response.posOnStart : -this._Control.lastMetredPos + curPos + response.posOnStart;
+      css(this.element, (_css2 = {}, _css2[this.directionString] = response.dimension, _css2[EFFECT$2] = 'none', _css2[OVERFLOW$1] = HIDDEN$1, _css2));
+      css(this._sc, OVERFLOW$1, HIDDEN$1);
+
+      if (response.posOnStart === this.marks[MarkIndex.high] && response.closing) {
+        css(this.element, this.directionString, SheetDrawer._toUnit(customDimension, this.options.unit));
+      }
+
+      if (Math.round(response.posOnStart) === Math.round(this.marks[MarkIndex.mid]) && response.opening && this.direction === Drawer.DOWN) {
+        this._sc.scrollTo(0, -rectangle.displacementY);
+      }
+
+      if (this.direction === Drawer.DOWN) {
+        curPos = WIN_SIZE - curPos;
+      }
+
+      this.backdrop.setOpacity(curPos / this.elementSize);
+    };
+
+    _proto._threshold = function _threshold(service, state, stateObj) {
+      service.lock();
+      var isOpen = state[1] === 'open';
+      var options = {
+        stateObj: stateObj,
+        transition: this.directionString + " ease " + this._calcSpeed(stateObj.TIMING) / KILO$1 + "s"
+      };
+
+      if (isOpen) {
+        this._hide(options);
+      } else {
+        this._show(options);
+      }
+    };
+
+    _proto._belowThreshold = function _belowThreshold(service, state, stateObj, rect) {
+      service.lock();
+      var isClosed = state[1] !== 'open';
+      var overallEventTime = stateObj.TIMING;
+      var MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD$1;
+      var MPD = MIN_POSITIVE_DISPLACEMENT$1;
+      var MND = MIN_NEGATIVE_DISPLACEMENT$1;
+      var displacement = rect.displacementY;
+      var options = {
+        rect: rect,
+        stateObj: stateObj,
+        transition: this.directionString + " ease " + this._calcSpeed(stateObj.TIMING) / KILO$1 + "s"
+      };
+      var position = stateObj.position;
+      var minForwardVelocity = MPD / MTTOB; // pixel/second: pps
+
+      var minBackwardVelocity = MND / MTTOB; // pps
+
+      var velocity = displacement / (overallEventTime / KILO$1);
+      var LOGIC = this.direction === Drawer.UP && isClosed || this.direction === Drawer.DOWN && !isClosed ? velocity > minForwardVelocity && rect.greaterHeight : velocity < minBackwardVelocity && rect.greaterHeight;
+
+      if (LOGIC) {
+        this._overrideBelowThresh(!isClosed, options);
+
+        return;
+      }
+
+      if (isClosed) {
+        this.element.style[this.directionString] = SheetDrawer._toUnit(position >= this.marks[MarkIndex.mid] ? (this._halfHidePrep(options), this.marks[MarkIndex.mid]) : (this._hidePrep(options), this.marks[MarkIndex.low]), this.options.unit);
+      } else {
+        this._showPrep(options);
+
+        this.element.style[this.directionString] = SheetDrawer._toUnit(position >= this.marks[MarkIndex.mid] ? this.marks[MarkIndex.mid] : this.marks[MarkIndex.high], this.options.unit);
+      }
+    };
+
+    _proto._show = function _show(options) {
+      if (this._Control.touchMoveExited) {
+        this._Control.touchMoveExited = false;
+        return;
+      }
+
+      css(this._sc, OVERFLOW$1, SCROLL$1);
+
+      this._showPrep(options);
+
+      this.element.style[this.directionString] = SheetDrawer._toUnit(this.marks[MarkIndex.high], this.options.unit);
+    };
+
+    _proto._hide = function _hide(options) {
+      if (this._Control.touchMoveExited) {
+        this._Control.touchMoveExited = false;
+        return;
+      }
+
+      this._hidePrep(options);
+
+      this.element.style[this.directionString] = SheetDrawer._toUnit(this.marks[MarkIndex.low], this.options.unit);
+    };
+
+    _proto._overrideBelowThresh = function _overrideBelowThresh(isOpen, options) {
+      var _options$stateObj = options.stateObj,
+          oppositeDimension = _options$stateObj.oppositeDimension,
+          position = _options$stateObj.position;
+      var isDownDrawer = this.direction === Drawer.DOWN;
+
+      if (isOpen) {
+        if (this._Control.touchMoveExited) {
+          this._Control.touchMoveExited = false;
+          return;
+        }
+
+        this.element.style[this.directionString] = SheetDrawer._toUnit(position >= this.marks[MarkIndex.mid] ? this.marks[MarkIndex.mid] : this.marks[MarkIndex.low], this.options.unit);
+
+        this._halfHidePrep(options);
+      } else {
+        var halfDimension = SheetDrawer._toUnit(this.marks[MarkIndex.mid], this.options.unit);
+
+        this._showPrep(options);
+
+        this.element.style[this.directionString] = isDownDrawer ? halfDimension : oppositeDimension;
+      }
+    };
+
+    _proto._halfHidePrep = function _halfHidePrep(options) {
+      var _css3;
+
+      this._body.style.overflow = HIDDEN$1;
+      css(this.element, (_css3 = {}, _css3[EFFECT$2] = options.transition, _css3[OVERFLOW$1] = AUTO$1, _css3));
+    };
+
+    _proto._hidePrep = function _hidePrep(options) {
+      var _css4;
+
+      this._body.style.overflow = SCROLL$1;
+      this.backdrop.hide(this.options.TRANSITION);
+      css(this.element, (_css4 = {}, _css4[EFFECT$2] = options.transition, _css4[OVERFLOW$1] = AUTO$1, _css4));
+
+      if (!this.bound.lower) {
+        this.element.style.boxShadow = 'none';
+      }
+
+      this._setState('close'); // callback for when nav is hidden
+
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)();
+      }
+    };
+
+    _proto._showPrep = function _showPrep(options) {
+      var _css5;
+
+      var buttonHash = getAttribute(this.options.INIT_ELEM, HREF$1) || getData(this.options.INIT_ELEM, HASH_ATTR$1);
+
+      if (buttonHash) {
+        WINDOW.location.hash = buttonHash;
+      }
+
+      this._body.style.overflow = options.bodyOverflow || HIDDEN$1;
+      this.backdrop.show(this.options.TRANSITION);
+      css(this.element, (_css5 = {}, _css5[EFFECT$2] = options.transition, _css5[OVERFLOW$1] = AUTO$1, _css5));
+
+      this._setState('open'); // callback for when nav is shown
+
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.show)();
+      }
+    };
+
+    _proto._calcSpeed = function _calcSpeed(time) {
+      if (time >= MAX_TIME) {
+        return MAX_SPEED$1;
+      }
+
+      var percent = 100;
+      var percentage = time / MAX_TIME * percent;
+      return percentage / percent * MAX_SPEED$1;
+    };
+
+    _proto._checkDirection = function _checkDirection() {
+      if (this.direction !== Drawer.UP && this.direction !== Drawer.DOWN) {
+        throw new RangeError('Direction out of range');
+      }
+    };
+
+    _proto._setState = function _setState(mode) {
+      switch (mode) {
+        case 'open':
+          this.state.activity.run();
+          break;
+
+        case 'close':
+          this.state.activity.derun();
+          break;
+
+        default:
+          throw new Error('this should never happen');
+      }
+    };
+
+    _proto._updateBound = function _updateBound() {
+      var bound = this._bound;
+      this._oldbound = new Bound(this.bound.lower, this.bound.upper);
+      this.bound.lower = bound.lower;
+    };
+
+    SheetDrawer._toUnit = function _toUnit(value, unit) {
+      if (unit === void 0) {
+        unit = 'px';
+      }
+
+      return value + unit;
+    };
+
+    _createClass(SheetDrawer, [{
+      key: "elementSize",
+      get: function get() {
+        return this.element.offsetHeight;
+      }
+    }, {
+      key: "_bound",
+      get: function get() {
+        var upperBound = this.elementSize;
+
+        if (this.direction === Drawer.DOWN) {
+          // get `element.offsetBottom`
+          var _lowerBound = WINDOW.screen.height - this.element.offsetTop;
+
+          return new Bound(_lowerBound, upperBound);
+        }
+
+        var lowerBound = upperBound + this.element.offsetTop;
+        return new Bound(lowerBound, upperBound);
+      }
+    }]);
+
+    return SheetDrawer;
+  }();
+
+  var TRANSITION_STYLE$3 = 'ease';
+  var EFFECT$3 = 'transition';
+  var TRANS_END$1 = 'transitionend';
+  var SCROLL$2 = 'scroll';
+  var HIDDEN$2 = 'hidden';
+  /**
+   * This Service is pretty much similar to NavService
+   * @see ../nav/navservice.js
+   * "Extend the NavService class"; you may think, but
+   * things will get a lot messy.
+   * Some little bit of copy-and-paste and tweaking was done.
+   */
+
+  var SheetService =
+  /*#__PURE__*/
+  function () {
+    function SheetService(options, state) {
+      this.options = options;
+      this.state = state;
+      this.sheet = options.ELEMENT;
+      this.button = options.INIT_ELEM;
+      this.backdrop = options.BACKDROP;
+      this.backdropElement = this.backdrop.backdrop;
+      this._body = options.BODY;
+      this.event = 'click';
+      this.direction = options.DIRECTION;
+      this.height = this.sheet.offsetHeight;
+      this.transTime = options.TRANSITION / 1e3;
+      this.transition = this.direction + " " + TRANSITION_STYLE$3 + " " + this.transTime + "s"; // state of the nav, whether open or close
+
+      this.alive = false; // diff. btw. event triggered from Drawer class and on here
+
+      /**
+       * @private
+       */
+
+      this._closeInvoked = false;
+      /**
+       * @readonly
+       * @private
+       */
+
+      this._initialState = SheetService.css(this.sheet, this.direction);
+      this._handlers = null;
+    }
+
+    var _proto = SheetService.prototype;
+
+    _proto.activate = function activate() {
+      var _this = this;
+
+      var ClickHandler = function ClickHandler(mouseEvent) {
+        _this.handler(mouseEvent);
+      };
+
+      var BackdropHandler = function BackdropHandler() {
+        _this._close();
+      };
+
+      var TransitionHandler = function TransitionHandler() {
+        if (!_this.alive && _this._closeInvoked) {
+          _this._cleanShadow();
+
+          _this._closeInvoked = false;
+        }
+      };
+
+      this._register({
+        ClickHandler: ClickHandler,
+        BackdropHandler: BackdropHandler,
+        TransitionHandler: TransitionHandler
+      });
+
+      this.button.addEventListener(this.event, this._handlers.ClickHandler);
+      this.backdropElement.addEventListener(this.event, this._handlers.BackdropHandler);
+
+      if (this._initialState === "-" + this._height('px')) {
+        this.sheet.addEventListener(TRANS_END$1, this._handlers.TransitionHandler);
+      }
+
+      return 0;
+    };
+
+    _proto.deactivate = function deactivate() {
+      throw new ReferenceError('cannot deactivate a default service. This service must be kept running');
+    };
+
+    _proto.forceDeactivate = function forceDeactivate() {
+      this.button.removeEventListener(this.event, this._handlers.ClickHandler);
+      this.backdropElement.removeEventListener(this.event, this._handlers.BackdropHandler);
+
+      if (this._initialState === "-" + this._height('px')) {
+        this.sheet.removeEventListener(TRANS_END$1, this._handlers.TransitionHandler);
+      }
+
+      this._register(null);
+    };
+
+    _proto.handler = function handler(mouseEvent) {
+      mouseEvent.preventDefault();
+
+      var state = SheetService._toNum(SheetService.css(this.sheet, this.direction));
+
+      if (state < ZERO) {
+        var buttonHash = getAttribute(this.button, 'href') || getData(this.button, 'data-href');
+
+        if (buttonHash) {
+          WINDOW.location.hash = buttonHash;
+        }
+
+        this._open();
+      } else {
+        this._close();
+      }
+    };
+
+    SheetService.css = function css$1(el, property, style) {
+      return css(el, property, style);
+    };
+
+    SheetService._toNum = function _toNum(val) {
+      val = val.replace(/[^\d]*$/, '');
+      return /\.(?=\d)/.test(val) ? Math.round(parseFloat(val)) : parseInt(val, 10);
+    };
+
+    _proto._height = function _height(unit) {
+      unit = unit || '';
+      return this.height + unit;
+    };
+
+    _proto._register = function _register(handler) {
+      this._handlers = handler;
+    };
+
+    _proto._open = function _open() {
+      var _style;
+
+      var style = (_style = {}, _style[this.direction] = ZERO, _style[EFFECT$3] = this.transition, _style.boxShadow = NAV_BOX_SHADOW[this.direction], _style);
+      SheetService.css(this.sheet, style);
+      this.backdrop.show(this.options.TRANSITION);
+      this._body.style.overflow = HIDDEN$2; // callback for when nav is shown
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.show)();
+      }
+
+      this.alive = true;
+      this.state.activity.run();
+    };
+
+    _proto._close = function _close() {
+      var _style2;
+
+      var style = (_style2 = {}, _style2[this.direction] = this._initialState, _style2[EFFECT$3] = this.transition, _style2);
+      SheetService.css(this.sheet, style);
+      this.backdrop.hide(this.options.TRANSITION);
+      this._body.style.overflow = SCROLL$2; // callback for when nav is hidden
+
+      if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
+        this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)();
+      }
+
+      this.alive = false;
+      this._closeInvoked = true;
+      this.state.activity.derun();
+    };
+
+    _proto._cleanShadow = function _cleanShadow() {
+      SheetService.css(this.sheet, 'boxShadow', 'none');
+    };
+
+    return SheetService;
+  }();
+
+  var CLASS_TYPE$2 = '[object Sheet]';
+  var NAME$1 = 'Sheet';
+  var SHEET = WINDOW[NAME$1] || null;
+
+  var Sheet =
+  /*#__PURE__*/
+  function (_NavCard) {
+    _inheritsLoose(Sheet, _NavCard);
+
+    function Sheet(src, dest) {
+      var _this;
+
+      _this = _NavCard.call(this, src, dest) || this;
+      _this.SheetService = null;
+      Sheet.defaultConfig.threshold = 2 / 3;
+      return _this;
+    }
+    /**
+     * @override
+     */
+
+
+    var _proto = Sheet.prototype;
+
+    _proto.setup = function setup(options) {
+      var navMountWorker = _NavCard.prototype.setup.call(this, options);
+
+      return new SheetMountWorker(navMountWorker.options);
+    }
+    /**
+     * @override
+     */
+    ;
+
+    _proto.terminate = function terminate(service) {
+      service |= 0;
+
+      if (service & NavCard.SERVICES.Default && this.SheetService instanceof SheetService) {
+        this.SheetService.deactivate();
+      }
+
+      if (service & NavCard.SERVICES.Drawer && this.Drawer instanceof SheetDrawer) {
+        this.Drawer.deactivate();
+      }
+
+      if (service & NavCard.SERVICES.Pop && this.PopService) {
+        /**
+         * we can't strictly determine that `this.PopService`
+         * is an instance of PopService class.
+         * This is an edge case as there is no access to that
+         * type.
+         */
+        this.PopService.deactivate(); // or super.terminate(...)
+      }
+
+      if (!service) {
+        throw new Error('a service id is required');
+      }
+    }
+    /**
+     * @override
+     */
+    ;
+
+    _proto.toString = function toString() {
+      return CLASS_TYPE$2;
+    }
+    /**
+     * @override
+     */
+    ;
+
+    Sheet.namespace = function namespace(name) {
+      WINDOW[name] = WINDOW[name] || {};
+      WINDOW[name][NAME$1] = Sheet;
+      WINDOW[NAME$1] = SHEET;
+    }
+    /**
+     * @override
+     */
+    ;
+
+    _proto._drawerAPI = function _drawerAPI(options) {
+      var _this2 = this;
+
+      this.Drawer = new SheetDrawer(options, this.State);
+      return {
+        activate: function activate() {
+          return _this2.Drawer.activate();
+        },
+        deactivate: function deactivate() {
+          return _this2.Drawer.deactivate();
+        }
+      };
+    }
+    /**
+     * @override
+     */
+    ;
+
+    _proto._hashAPI = function _hashAPI(options) {
+      var Interface = _NavCard.prototype._hashAPI.call(this, options);
+
+      this.PopService.parentService = this.SheetService;
+      return Interface;
+    }
+    /**
+     * @override
+     */
+    ;
+
+    _proto._defaultAPI = function _defaultAPI(options) {
+      var _this3 = this;
+
+      this.SheetService = new SheetService(options, this.State);
+      return {
+        activate: function activate() {
+          return _this3.SheetService.activate();
+        },
+        deactivate: function deactivate() {
+          return _this3.SheetService.deactivate();
+        }
+      };
+    };
+
+    return Sheet;
   }(NavCard);
 
-  var Cardinal = function Cardinal() {};
+  var SheetMountWorker =
+  /*#__PURE__*/
+  function (_Sheet) {
+    _inheritsLoose(SheetMountWorker, _Sheet);
 
-  _defineProperty(Cardinal, "CircularPath", CircularPath);
+    function SheetMountWorker(options) {
+      var _this4;
 
-  _defineProperty(Cardinal, "Drawer", Drawer);
+      _this4 = _Sheet.call(this) || this;
+      _this4.options = options;
+      return _this4;
+    }
 
-  _defineProperty(Cardinal, "Nav", NavCard);
+    var _proto2 = SheetMountWorker.prototype;
 
-  return Cardinal;
+    _proto2.mount = function mount() {
+      var _this5 = this;
+
+      var DEFAULT_ACTIVE = !this._defaultAPI(this.options.defaultOptions).activate();
+      var DRAWER_ACTIVE = !this._drawerAPI(this.options.drawerOptions).activate();
+      var HASH_ACTIVE = !this._hashAPI(this.options.hashOptions).activate();
+      return new Promise(function (resolve, reject) {
+        if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
+          reject(new Error('one or more services could not activate'));
+          return;
+        }
+
+        resolve(new SheetStateEvent(_this5.State));
+      });
+    };
+
+    _proto2.unmount = function unmount() {
+      this.SheetService.forceDeactivate();
+      this.Drawer.deactivate();
+      this.PopService.deactivate();
+    };
+
+    _proto2.toString = function toString() {
+      return '[object SheetMountWorker]';
+    };
+
+    return SheetMountWorker;
+  }(Sheet);
+
+  var SheetStateEvent =
+  /*#__PURE__*/
+  function () {
+    function SheetStateEvent(state) {
+      _defineProperty(this, "events", [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide]);
+
+      this._State = state;
+    }
+
+    var _proto3 = SheetStateEvent.prototype;
+
+    _proto3.on = function on(event, handle) {
+      if (!(this.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      this._State["on" + event] = handle;
+    };
+
+    _proto3.off = function off(event) {
+      if (!(this.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      this._State["on" + event] = null;
+    };
+
+    return SheetStateEvent;
+  }();
+
+  var Util = {
+    NAV_BOX_SHADOW: NAV_BOX_SHADOW,
+    ZERO: ZERO,
+    DIRECTIONS: DIRECTIONS,
+    NAVSTATE_EVENTS: NAVSTATE_EVENTS,
+    Path: Path,
+    Bound: Bound,
+    dataCamelCase: dataCamelCase,
+    camelCase: camelCase,
+    unique: unique,
+    $: $,
+    getAttribute: getAttribute,
+    hasAttribute: hasAttribute,
+    setAttribute: setAttribute,
+    getData: getData,
+    resolveThreshold: resolveThreshold,
+    css: css
+  };
+  var index = {
+    CircularPath: CircularPath,
+    Drawer: Drawer,
+    Nav: NavCard,
+    Sheet: Sheet,
+    Util: Util
+  };
+
+  return index;
 
 }));
 //# sourceMappingURL=cardinal.js.map

@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-06-01T23:37:49.197Z
+  * Build Date: 2019-08-12T00:27:59.638Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -70,12 +70,6 @@
     return _extends.apply(this, arguments);
   }
 
-  function _inheritsLoose(subClass, superClass) {
-    subClass.prototype = Object.create(superClass.prototype);
-    subClass.prototype.constructor = subClass;
-    subClass.__proto__ = superClass;
-  }
-
   var Backdrop =
   /*#__PURE__*/
   function () {
@@ -118,27 +112,13 @@
     return Backdrop;
   }();
 
-  // interface
-  var STATE = {
-    navstate: null,
-    event: new Proxy({}, {
-      set: function set(obj, prop, val) {
-        if (typeof val !== 'function') {
-          throw new TypeError("the set value: '" + val + "' is not callable");
-        }
-
-        obj[prop] = val;
-        return true;
-      }
-    })
-  };
-
   var ZERO = 0;
   var KILO = 1e3;
   var MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.5;
   var MIN_POSITIVE_DISPLACEMENT = 10;
   var MIN_NEGATIVE_DISPLACEMENT = -MIN_POSITIVE_DISPLACEMENT;
-  var TRANSITION_STYLE = 'linear';
+  var TRANSITION_STYLE = 'linear'; // 'cubic-bezier(0, 0.5, 0, 1)'
+
   var EFFECT = 'transition';
   var OVERFLOW = 'overflow';
   var TRANS_TIMING = '0.1s';
@@ -152,7 +132,7 @@
   var MOVE = 'move';
   var THRESHOLD = 'threshold';
   var BELOW_THRESHOLD = "below" + THRESHOLD;
-  var MAX_TIME = KILO;
+  var MIN_SPEED = 100;
   var MAX_SPEED = 500;
 
   var NavDrawer =
@@ -164,9 +144,11 @@
      * Support for Top and Bottom may come in the future
      * @throws RangeError
      * @param {{}} options An options Object to configure the Drawer with
+     * @param {{}} state An activity and service manager
      */
-    function NavDrawer(options) {
+    function NavDrawer(options, state) {
       this.options = options;
+      this.state = state;
       this.element = this.options.ELEMENT;
       this._body = this.options.BODY;
       this._backdrop = this.options.BACKDROP;
@@ -182,7 +164,8 @@
         TARGET: document
       });
 
-      this.drawer = new Drawer.SnappedDrawer(o, this.bound);
+      this.drawer = new Drawer.SnappedDrawer(o, this.bound, Drawer.DrawerManagementStore);
+      Drawer.DrawerManagementStore.pushActivity(this.state.activity);
       this.transition = this.directionString + " " + TRANS_TEMPLATE;
     }
 
@@ -190,6 +173,7 @@
 
     _proto.activate = function activate() {
       this.drawer.on(START, this._startHandler).on(MOVE, this._moveHandler).on(THRESHOLD, this._threshold).on(BELOW_THRESHOLD, this._belowThreshold).setContext(this).activate();
+      this.drawer.setServiceID(this.state.activity.id);
       return 0;
     };
 
@@ -198,21 +182,24 @@
       return 0;
     };
 
-    _proto._startHandler = function _startHandler(response) {
+    _proto._startHandler = function _startHandler(service, response) {
       var _css;
 
+      service.lock();
+      this.state.activity.run();
       util_js.css(this.element, (_css = {}, _css[this.directionString] = response.dimension, _css.boxShadow = util_js.NAV_BOX_SHADOW[this.directionString], _css[EFFECT] = this.transition, _css));
       this._body.style.overflow = HIDDEN;
     };
 
-    _proto._moveHandler = function _moveHandler(response, rectangle) {
+    _proto._moveHandler = function _moveHandler(service, response, rectangle) {
       var _css2;
 
+      service.lock();
       var curPos = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rectangle.coordsY.y2 : rectangle.coordsX.x2;
       util_js.css(this.element, (_css2 = {}, _css2[this.directionString] = response.dimension, _css2[EFFECT] = 'none', _css2[OVERFLOW] = HIDDEN, _css2));
 
       if (this.direction === Drawer.RIGHT) {
-        var WIN_SIZE = window.screen.availWidth;
+        var WIN_SIZE = util_js.WINDOW.screen.width;
         curPos = WIN_SIZE - curPos;
 
         this._backdrop.setOpacity(curPos / this.elementSize);
@@ -223,11 +210,12 @@
       this._backdrop.setOpacity(curPos / this.elementSize);
     };
 
-    _proto._threshold = function _threshold(state, stateObj) {
+    _proto._threshold = function _threshold(service, state, stateObj, rect) {
+      service.lock();
       var isOpen = state[1] === 'open';
       var options = {
         stateObj: stateObj,
-        transition: this.directionString + " ease " + this._calcSpeed(stateObj.TIMING) / KILO + "s"
+        transition: this.directionString + " " + TRANSITION_STYLE + " " + this._calcSpeed(stateObj.TIMING, rect.width) / KILO + "s"
       };
 
       if (isOpen) {
@@ -237,7 +225,8 @@
       }
     };
 
-    _proto._belowThreshold = function _belowThreshold(state, stateObj, rect) {
+    _proto._belowThreshold = function _belowThreshold(service, state, stateObj, rect) {
+      service.lock();
       var isClosed = state[1] !== 'open';
       var overallEventTime = stateObj.TIMING;
       var MTTOB = MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD;
@@ -246,7 +235,7 @@
       var displacement = this.direction === Drawer.UP || this.direction === Drawer.DOWN ? rect.displacementY : rect.displacementX;
       var options = {
         stateObj: stateObj,
-        transition: this.directionString + " ease " + this._calcSpeed(stateObj.TIMING) / KILO + "s"
+        transition: this.directionString + " " + TRANSITION_STYLE + " " + this._calcSpeed(stateObj.TIMING, rect.width) / KILO + "s"
       };
       var LOGIC;
 
@@ -257,27 +246,26 @@
       }
 
       if (overallEventTime / KILO < MTTOB) {
-        // DIRECTION: Drawer.UP | Drawer.LEFT
         if (LOGIC) {
           this._overrideBelowThresh(!isClosed, options);
         } else {
           if (isClosed) {
-            // close it back didn't hit thresh. and can't override
+            // Close it. Can't override
             this._hide(options);
 
             return;
-          } // open it back didn't hit thresh. and can't override because not enough displacement
+          } // Open it. Can't override. Not enough displacement
 
 
           this._show(options);
         }
       } else {
         if (isClosed) {
-          // close it back didn't hit thresh. and can't override because not enough velocity or displacement
+          // close it
           this._hide(options);
 
           return;
-        } // open it back didn't hit thresh. and can't override because not enough velocity or displacement
+        } // open it
 
 
         this._show(options);
@@ -311,6 +299,7 @@
     _proto._hidePrep = function _hidePrep(options) {
       var _css3;
 
+      this.state.activity.derun();
       this._body.style.overflow = SCROLL;
 
       this._backdrop.hide(this.options.TRANSITION);
@@ -324,8 +313,8 @@
       this._setState('close'); // callback for when nav is hidden
 
 
-      if (STATE.event[util_js.NAVSTATE_EVENTS.hide]) {
-        STATE.event[util_js.NAVSTATE_EVENTS.hide]();
+      if (this.state.isRegisteredEvent(util_js.NAVSTATE_EVENTS.hide)) {
+        this.state.getStateEventHandler(util_js.NAVSTATE_EVENTS.hide)();
       }
     };
 
@@ -335,7 +324,7 @@
       var buttonHash = util_js.getAttribute(this.options.INIT_ELEM, HREF) || util_js.getData(this.options.INIT_ELEM, HASH_ATTR);
 
       if (buttonHash) {
-        window.location.hash = buttonHash;
+        util_js.WINDOW.location.hash = buttonHash;
       }
 
       this._body.style.overflow = HIDDEN;
@@ -347,19 +336,27 @@
       this._setState('open'); // callback for when nav is shown
 
 
-      if (STATE.event[util_js.NAVSTATE_EVENTS.show]) {
-        STATE.event[util_js.NAVSTATE_EVENTS.show]();
+      if (this.state.isRegisteredEvent(util_js.NAVSTATE_EVENTS.show)) {
+        this.state.getStateEventHandler(util_js.NAVSTATE_EVENTS.show)();
       }
     };
 
-    _proto._calcSpeed = function _calcSpeed(time) {
-      if (time >= MAX_TIME) {
-        return MAX_SPEED;
+    _proto._calcSpeed = function _calcSpeed(time, distance) {
+      var distanceRemain = this.elementSize - distance;
+
+      if (~Math.sign(distanceRemain)) {
+        var newTime = distanceRemain * time / distance;
+
+        if (newTime > MAX_SPEED) {
+          newTime = MAX_SPEED;
+        } else if (newTime < MIN_SPEED) {
+          newTime = MIN_SPEED;
+        }
+
+        return newTime;
       }
 
-      var percent = 100;
-      var percentage = time / MAX_TIME * percent;
-      return percentage / percent * MAX_SPEED;
+      return 0;
     };
 
     _proto._checkDirection = function _checkDirection() {
@@ -371,23 +368,11 @@
     _proto._setState = function _setState(mode) {
       switch (mode) {
         case 'open':
-          STATE.navstate = {
-            alive: true,
-            activity: {
-              service: this,
-              action: mode
-            }
-          };
+          this.state.activity.run();
           break;
 
         case 'close':
-          STATE.navstate = {
-            alive: false,
-            activity: {
-              service: this,
-              action: mode
-            }
-          };
+          this.state.activity.derun();
           break;
 
         default:
@@ -413,9 +398,15 @@
     }, {
       key: "_bound",
       get: function get() {
-        var curPos = util_js.css(this.element, this.directionString).replace(/[^\d]*$/, '');
         var upperBound = this.elementSize;
-        var lowerBound = upperBound + parseInt(curPos, 10);
+
+        if (this.direction === Drawer.RIGHT) {
+          var _lowerBound = util_js.WINDOW.screen.width - this.element.offsetLeft;
+
+          return new util_js.Bound(_lowerBound, upperBound);
+        }
+
+        var lowerBound = upperBound + this.element.offsetLeft;
         return new util_js.Bound(lowerBound, upperBound);
       }
     }]);
@@ -423,17 +414,19 @@
     return NavDrawer;
   }();
 
-  var TRANSITION_STYLE$1 = 'ease';
+  var TRANSITION_STYLE$1 = 'cubic-bezier(0, 0.5, 0, 1)';
   var EFFECT$1 = 'transition';
   var TRANS_END = 'transitionend';
 
   var NavService =
   /*#__PURE__*/
   function () {
-    function NavService(options) {
+    function NavService(options, state) {
       this.options = options;
+      this.state = state;
       this.nav = options.ELEMENT;
       this.button = options.INIT_ELEM;
+      this.body = options.BODY;
       this.backdrop = options.BACKDROP;
       this.backdropElement = this.backdrop.backdrop;
       this.event = 'click';
@@ -519,7 +512,7 @@
         var buttonHash = util_js.getAttribute(this.button, 'href') || util_js.getData(this.button, 'data-href');
 
         if (buttonHash) {
-          window.location.hash = buttonHash;
+          util_js.WINDOW.location.hash = buttonHash;
         }
 
         this._open();
@@ -551,21 +544,15 @@
 
       var style = (_style = {}, _style[this.direction] = util_js.ZERO, _style[EFFECT$1] = this.transition, _style.boxShadow = util_js.NAV_BOX_SHADOW[this.direction], _style);
       NavService.css(this.nav, style);
-      this.backdrop.show(this.options.TRANSITION); // callback for when nav is shown
+      this.backdrop.show(this.options.TRANSITION);
+      NavService.css(this.body, 'overflow', 'hidden'); // callback for when nav is shown
 
-      if (STATE.event[util_js.NAVSTATE_EVENTS.show]) {
-        STATE.event[util_js.NAVSTATE_EVENTS.show]();
+      if (this.state.isRegisteredEvent(util_js.NAVSTATE_EVENTS.show)) {
+        this.state.getStateEventHandler(util_js.NAVSTATE_EVENTS.show)();
       }
 
       this.alive = true;
-      var state = {
-        alive: this.alive,
-        activity: {
-          service: this,
-          action: 'open'
-        }
-      };
-      STATE.navstate = state;
+      this.state.activity.run();
     };
 
     _proto._close = function _close() {
@@ -573,22 +560,16 @@
 
       var style = (_style2 = {}, _style2[this.direction] = this._initialState, _style2[EFFECT$1] = this.transition, _style2);
       NavService.css(this.nav, style);
-      this.backdrop.hide(this.options.TRANSITION); // callback for when nav is hidden
+      this.backdrop.hide(this.options.TRANSITION);
+      NavService.css(this.body, 'overflow', 'initial'); // callback for when nav is hidden
 
-      if (STATE.event[util_js.NAVSTATE_EVENTS.hide]) {
-        STATE.event[util_js.NAVSTATE_EVENTS.hide]();
+      if (this.state.isRegisteredEvent(util_js.NAVSTATE_EVENTS.hide)) {
+        this.state.getStateEventHandler(util_js.NAVSTATE_EVENTS.hide)();
       }
 
       this.alive = false;
       this._closeInvoked = true;
-      var state = {
-        alive: this.alive,
-        activity: {
-          service: this,
-          action: 'close'
-        }
-      };
-      STATE.navstate = state;
+      this.state.activity.derun();
     };
 
     _proto._cleanShadow = function _cleanShadow() {
@@ -601,8 +582,9 @@
   var PopService =
   /*#__PURE__*/
   function () {
-    function PopService(parentService, options) {
+    function PopService(parentService, options, state) {
       this.options = options;
+      this.state = state;
       this.parentService = parentService;
       this.button = options.INIT_ELEM;
       this.event = 'hashchange';
@@ -620,12 +602,12 @@
 
       this._register(handler);
 
-      window.addEventListener(this.event, this.handler, true);
+      util_js.WINDOW.addEventListener(this.event, this.handler, true);
       return 0;
     };
 
     _proto.deactivate = function deactivate() {
-      window.removeEventListener(this.event, this.handler, true);
+      util_js.WINDOW.removeEventListener(this.event, this.handler, true);
 
       this._register(null);
 
@@ -640,7 +622,7 @@
     _proto._hashchange = function _hashchange(hashChangeEvent) {
       var oldHash = PopService._getHash(hashChangeEvent.oldURL);
 
-      if (oldHash === (util_js.getAttribute(this.button, 'href') || util_js.getData(this.button, 'data-href')) && STATE.navstate && STATE.navstate.alive) {
+      if (oldHash === (util_js.getAttribute(this.button, 'href') || util_js.getData(this.button, 'data-href')) && this.state.activity.isRunning()) {
         hashChangeEvent.stopImmediatePropagation();
 
         this.parentService._close();
@@ -661,11 +643,66 @@
     return PopService;
   }();
 
+  var EventInterface = {
+    SHOW: 'show',
+    HIDE: 'hide'
+  };
+
+  var State =
+  /*#__PURE__*/
+  function () {
+    function State(activity) {
+      var _this$_stateEventRegi;
+
+      this.activity = activity; // activity manager
+
+      this._stateEventRegistry = (_this$_stateEventRegi = {}, _this$_stateEventRegi[EventInterface.SHOW] = null, _this$_stateEventRegi[EventInterface.HIDE] = null, _this$_stateEventRegi);
+    }
+
+    var _proto = State.prototype;
+
+    _proto.getStateEventHandler = function getStateEventHandler(type) {
+      if (Object.values(EventInterface).indexOf(type) !== -1) {
+        return this._stateEventRegistry[type];
+      }
+
+      throw new Error('unknown event type');
+    };
+
+    _proto.isRegisteredEvent = function isRegisteredEvent(type) {
+      return typeof this._stateEventRegistry[type] === 'function';
+    };
+
+    _createClass(State, [{
+      key: "onshow",
+      set: function set(val) {
+        if (typeof val !== 'function') {
+          throw new TypeError('value is not a callable type');
+        }
+
+        this._stateEventRegistry.show = val;
+        return true;
+      }
+    }, {
+      key: "onhide",
+      set: function set(val) {
+        if (typeof val !== 'function') {
+          throw new TypeError('value is not a callable type');
+        }
+
+        this._stateEventRegistry.hide = val;
+        return true;
+      }
+    }]);
+
+    return State;
+  }();
+
   var BACKDROP = 'backdrop';
   var MEDIA_DRAW = 'data-max-width';
   var CLASS_TYPE = '[object NavCard]';
   var NAME = 'Nav';
-  var NAV = window[NAME] || null;
+  var NAV = util_js.WINDOW[NAME] || null;
 
   var NavCard =
   /*#__PURE__*/
@@ -700,6 +737,8 @@
       this.Drawer = null;
       this.SheetService = null;
       this.PopService = null;
+      this._Activity = new util_js.ActivityManager(this);
+      this.State = new State(this._Activity);
     }
 
     var _proto = NavCard.prototype;
@@ -762,13 +801,15 @@
         MAX_WIDTH: maxWidth,
         DIRECTION: opts.direction,
         maxStartArea: opts.maxStartArea,
-        threshold: opts.threshold
+        threshold: opts.threshold,
+        scrollableContainer: opts.scrollableContainer,
+        CustomDrawer: opts.CustomDrawer
       });
 
       var hashOptions = {
         INIT_ELEM: defaultOptions.INIT_ELEM
       };
-      return new NavMountWorker({
+      return new NavMountWorker(this, {
         defaultOptions: defaultOptions,
         drawerOptions: drawerOptions,
         hashOptions: hashOptions
@@ -776,22 +817,21 @@
     };
 
     _proto.terminate = function terminate(service) {
-      var flag = 0;
-      flag |= service;
+      service |= 0;
 
-      if (flag & NavCard.SERVICES.Default && this.SheetService instanceof NavService) {
+      if (service & NavCard.SERVICES.Default && this.SheetService instanceof NavService) {
         this.SheetService.deactivate();
       }
 
-      if (flag & NavCard.SERVICES.Drawer && this.Drawer instanceof NavDrawer) {
+      if (service & NavCard.SERVICES.Drawer && this.Drawer instanceof NavDrawer) {
         this.Drawer.deactivate();
       }
 
-      if (flag & NavCard.SERVICES.Hash && this.PopService instanceof PopService) {
+      if (service & NavCard.SERVICES.Hash && this.PopService instanceof PopService) {
         this.PopService.deactivate();
       }
 
-      if (!flag) {
+      if (!service) {
         throw new Error('a service id is required');
       }
     };
@@ -801,15 +841,16 @@
     };
 
     NavCard.namespace = function namespace(name) {
-      window[name] = window[name] || {};
-      window[name][NAME] = NavCard;
-      window[NAME] = NAV;
+      util_js.WINDOW[name] = util_js.WINDOW[name] || {};
+      util_js.WINDOW[name][NAME] = NavCard;
+      util_js.WINDOW[NAME] = NAV;
     };
 
     _proto._drawerAPI = function _drawerAPI(options) {
       var _this = this;
 
-      this.Drawer = new NavDrawer(options);
+      var Drawer = options.CustomDrawer;
+      this.Drawer = Drawer && typeof Drawer === 'object' ? new Drawer(options, this.State) : new NavDrawer(options, this.State);
       return {
         activate: function activate() {
           return _this.Drawer.activate();
@@ -823,7 +864,7 @@
     _proto._hashAPI = function _hashAPI(options) {
       var _this2 = this;
 
-      this.PopService = new PopService(this.SheetService, options);
+      this.PopService = new PopService(this.SheetService, options, this.State);
       return {
         activate: function activate() {
           return _this2.PopService.activate();
@@ -837,7 +878,7 @@
     _proto._defaultAPI = function _defaultAPI(options) {
       var _this3 = this;
 
-      this.SheetService = new NavService(options);
+      this.SheetService = new NavService(options, this.State);
       return {
         activate: function activate() {
           return _this3.SheetService.activate();
@@ -857,9 +898,11 @@
     useBackdrop: false,
     backdrop: null,
     dest: null,
+    scrollableContainer: null,
     maxStartArea: 25,
     threshold: 1 / 2,
-    unit: 'px'
+    unit: 'px',
+    CustomDrawer: null
   });
 
   _defineProperty(NavCard, "SERVICES", {
@@ -870,37 +913,34 @@
 
   var NavMountWorker =
   /*#__PURE__*/
-  function (_NavCard) {
-    _inheritsLoose(NavMountWorker, _NavCard);
-
-    function NavMountWorker(options) {
-      var _this4;
-
-      _this4 = _NavCard.call(this) || this;
-      _this4.options = options;
-      return _this4;
+  function () {
+    function NavMountWorker(borrowedContext, options) {
+      this.$this = borrowedContext;
+      this.options = options;
     }
 
     var _proto2 = NavMountWorker.prototype;
 
     _proto2.mount = function mount() {
-      var DEFAULT_ACTIVE = !this._defaultAPI(this.options.defaultOptions).activate();
-      var DRAWER_ACTIVE = !this._drawerAPI(this.options.drawerOptions).activate();
-      var HASH_ACTIVE = !this._hashAPI(this.options.hashOptions).activate();
+      var _this4 = this;
+
+      var DEFAULT_ACTIVE = !this.$this._defaultAPI(this.options.defaultOptions).activate();
+      var DRAWER_ACTIVE = !this.$this._drawerAPI(this.options.drawerOptions).activate();
+      var HASH_ACTIVE = !this.$this._hashAPI(this.options.hashOptions).activate();
       return new Promise(function (resolve, reject) {
         if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
           reject(new Error('one or more services could not activate'));
           return;
         }
 
-        resolve(NavStateEvent);
+        resolve(new NavStateEvent(_this4.$this, _this4.$this.State));
       });
     };
 
     _proto2.unmount = function unmount() {
-      this.SheetService.forceDeactivate();
-      this.Drawer.deactivate();
-      this.PopService.deactivate();
+      this.$this.SheetService.forceDeactivate();
+      this.$this.Drawer.deactivate();
+      this.$this.PopService.deactivate();
     };
 
     _proto2.toString = function toString() {
@@ -908,25 +948,44 @@
     };
 
     return NavMountWorker;
-  }(NavCard);
+  }();
 
-  var NavStateEvent = {
-    events: [util_js.NAVSTATE_EVENTS.show, util_js.NAVSTATE_EVENTS.hide],
-    on: function on(event, handle) {
-      if (!(NavStateEvent.events.indexOf(event) + 1)) {
-        throw new Error("unknown event '" + event + "'");
-      }
+  var NavStateEvent =
+  /*#__PURE__*/
+  function () {
+    function NavStateEvent($this, state) {
+      _defineProperty(this, "events", [util_js.NAVSTATE_EVENTS.show, util_js.NAVSTATE_EVENTS.hide]);
 
-      STATE.event[event] = handle;
-    },
-    off: function off(event) {
-      if (!(NavStateEvent.events.indexOf(event) + 1)) {
-        throw new Error("unknown event '" + event + "'");
-      }
-
-      STATE.event[event] = null;
+      this.$this = $this;
+      this._State = state;
     }
-  };
+
+    var _proto3 = NavStateEvent.prototype;
+
+    _proto3.on = function on(event, handle) {
+      if (handle === void 0) {
+        handle = function handle() {
+          return false;
+        };
+      }
+
+      if (!(this.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      this._State["on" + event] = handle.bind(this.$this);
+    };
+
+    _proto3.off = function off(event) {
+      if (!(this.events.indexOf(event) + 1)) {
+        throw new Error("unknown event '" + event + "'");
+      }
+
+      this._State["on" + event] = null;
+    };
+
+    return NavStateEvent;
+  }();
 
   return NavCard;
 
