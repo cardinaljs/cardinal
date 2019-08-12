@@ -8,7 +8,7 @@ import {
   getData
 } from './../util'
 
-const TRANSITION_STYLE = 'ease'
+const TRANSITION_STYLE = 'cubic-bezier(0, 0.5, 0, 1)'
 const EFFECT = 'transition'
 const TRANS_END = 'transitionend'
 
@@ -18,6 +18,7 @@ class NavService {
     this.state = state
     this.nav = options.ELEMENT
     this.button = options.INIT_ELEM
+    this.body = options.BODY
     this.backdrop = options.BACKDROP
     this.backdropElement = this.backdrop.backdrop
     this.event = 'click'
@@ -120,6 +121,7 @@ class NavService {
     }
     NavService.css(this.nav, style)
     this.backdrop.show(this.options.TRANSITION)
+    NavService.css(this.body, 'overflow', 'hidden')
     // callback for when nav is shown
     if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.show)) {
       this.state.getStateEventHandler(NAVSTATE_EVENTS.show)()
@@ -137,6 +139,7 @@ class NavService {
     }
     NavService.css(this.nav, style)
     this.backdrop.hide(this.options.TRANSITION)
+    NavService.css(this.body, 'overflow', 'initial')
     // callback for when nav is hidden
     if (this.state.isRegisteredEvent(NAVSTATE_EVENTS.hide)) {
       this.state.getStateEventHandler(NAVSTATE_EVENTS.hide)()

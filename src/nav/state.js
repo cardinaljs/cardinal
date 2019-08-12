@@ -5,7 +5,7 @@ const EventInterface = {
 
 export default class State {
   constructor(activity) {
-    this.activity = activity
+    this.activity = activity // activity manager
     this._stateEventRegistry = {
       [EventInterface.SHOW]: null,
       [EventInterface.HIDE]: null
