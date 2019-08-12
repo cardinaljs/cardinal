@@ -27,7 +27,7 @@ export default class SnappedDrawer {
     this._target = options.TARGET
     this._handlers = null
     this._direction = options.DIRECTION
-    this._callibration = null
+    this._calibration = null
     this._callbacks = null
     this._context = this
     this._id = 0
@@ -58,25 +58,25 @@ export default class SnappedDrawer {
 
     const startHandler = (touchEvent) => {
       const activity = this._drawerManager.getRunningActivity()
-      if (this._callibration &&
+      if (this._calibration &&
         (this._id && activity && activity.id === this._id ||
           !activity && this._isCoolSignal(this._getSignal(touchEvent)))) {
-        this._callibration.start(touchEvent, startfn)
+        this._calibration.start(touchEvent, startfn)
       }
     }
 
     const moveHandler = (touchEvent) => {
       const activity = this._drawerManager.getRunningActivity()
-      if (this._callibration && activity && activity.id === this._id) {
-        this._callibration.move(touchEvent, movefn)
+      if (this._calibration && activity && activity.id === this._id) {
+        this._calibration.move(touchEvent, movefn)
       }
     }
 
     const endHandler = (touchEvent) => {
       const activity = this._drawerManager.getRunningActivity()
-      if (this._callibration && activity && activity.id === this._id) {
+      if (this._calibration && activity && activity.id === this._id) {
         const state = {}
-        this._callibration.end(touchEvent, endfn, state) // state by Ref
+        this._calibration.end(touchEvent, endfn, state) // state by Ref
         this._processThresholdState(state)
       }
     }
@@ -149,7 +149,7 @@ export default class SnappedDrawer {
 
   setContext(ctx) {
     this._context = ctx
-    this._callibration.setContext(ctx)
+    this._calibration.setContext(ctx)
     return this
   }
 
@@ -182,16 +182,16 @@ export default class SnappedDrawer {
   _setCalibration(point, bound) {
     switch (point) {
       case SnappedDrawer.UP:
-        this._callibration = new Top(this._options, bound)
+        this._calibration = new Top(this._options, bound)
         break
       case SnappedDrawer.LEFT:
-        this._callibration = new Left(this._options, bound)
+        this._calibration = new Left(this._options, bound)
         break
       case SnappedDrawer.DOWN:
-        this._callibration = new Bottom(this._options, bound)
+        this._calibration = new Bottom(this._options, bound)
         break
       case SnappedDrawer.RIGHT:
-        this._callibration = new Right(this._options, bound)
+        this._calibration = new Right(this._options, bound)
         break
       default:
         throw RangeError('Direction out of range')
@@ -199,7 +199,7 @@ export default class SnappedDrawer {
   }
 
   _isCoolSignal(signal) {
-    const size = this._direction === SnappedDrawer.UP || this._direction === SnappedDrawer.DOWN ? WINDOW.screen.availHeight : WINDOW.screen.availWidth
+    const size = this._direction === SnappedDrawer.UP || this._direction === SnappedDrawer.DOWN ? WINDOW.screen.height : WINDOW.screen.width
     switch (this._direction) {
       case SnappedDrawer.UP:
       case SnappedDrawer.LEFT:
@@ -238,7 +238,6 @@ export default class SnappedDrawer {
     }
   }
 
-  // private
   _register(...handlers) {
     this._handlers = handlers
   }

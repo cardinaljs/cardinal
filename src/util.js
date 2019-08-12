@@ -136,11 +136,11 @@ export function getData(el, dataName) {
 }
 
 export function offsetRight(el) {
-  return WINDOW.screen.availWidth - el.offsetLeft - el.offsetWidth
+  return WINDOW.screen.width - el.offsetLeft - el.offsetWidth
 }
 
 export function offsetBottom(el) {
-  return WINDOW.screen.availHeight - el.offsetTop - el.offsetHeight
+  return WINDOW.screen.height - el.offsetTop - el.offsetHeight
 }
 
 export function resolveThreshold(threshold) {

@@ -15,7 +15,7 @@ const KILO = 1e3
 const MIN_TIME_TO_OVERRIDE_BELOWTHRESHOLD = 0.5
 const MIN_POSITIVE_DISPLACEMENT = 10
 const MIN_NEGATIVE_DISPLACEMENT = -MIN_POSITIVE_DISPLACEMENT
-const TRANSITION_STYLE = 'linear'
+const TRANSITION_STYLE = 'linear'// 'cubic-bezier(0, 0.5, 0, 1)'
 const EFFECT = 'transition'
 const OVERFLOW = 'overflow'
 const TRANS_TIMING = '0.1s'
@@ -29,7 +29,7 @@ const START = 'start'
 const MOVE = 'move'
 const THRESHOLD = 'threshold'
 const BELOW_THRESHOLD = `below${THRESHOLD}`
-const MAX_TIME = KILO
+const MIN_SPEED = 100
 const MAX_SPEED = 500
 
 class NavDrawer {
@@ -94,7 +94,7 @@ class NavDrawer {
   get _bound() {
     const upperBound = this.elementSize
     if (this.direction === Drawer.RIGHT) {
-      const lowerBound = WINDOW.screen.availWidth - this.element.offsetLeft
+      const lowerBound = WINDOW.screen.width - this.element.offsetLeft
       return new Bound(lowerBound, upperBound)
     }
     const lowerBound = upperBound + this.element.offsetLeft
@@ -121,7 +121,7 @@ class NavDrawer {
       [OVERFLOW]: HIDDEN
     })
     if (this.direction === Drawer.RIGHT) {
-      const WIN_SIZE = WINDOW.screen.availWidth
+      const WIN_SIZE = WINDOW.screen.width
       curPos = WIN_SIZE - curPos
       this._backdrop.setOpacity(curPos / this.elementSize)
       return
@@ -129,12 +129,12 @@ class NavDrawer {
     this._backdrop.setOpacity(curPos / this.elementSize)
   }
 
-  _threshold(service, state, stateObj) {
+  _threshold(service, state, stateObj, rect) {
     service.lock()
     const isOpen = state[1] === 'open'
     const options = {
       stateObj,
-      transition: `${this.directionString} ease ${this._calcSpeed(stateObj.TIMING) / KILO}s`
+      transition: `${this.directionString} ${TRANSITION_STYLE} ${this._calcSpeed(stateObj.TIMING, rect.width) / KILO}s`
     }
     if (isOpen) {
       this._hide(options)
@@ -154,7 +154,7 @@ class NavDrawer {
       ? rect.displacementY : rect.displacementX
     const options = {
       stateObj,
-      transition: `${this.directionString} ease ${this._calcSpeed(stateObj.TIMING) / KILO}s`
+      transition: `${this.directionString} ${TRANSITION_STYLE} ${this._calcSpeed(stateObj.TIMING, rect.width) / KILO}s`
     }
     let LOGIC
     if (this.direction === Drawer.LEFT && isClosed || this.direction === Drawer.RIGHT && !isClosed) {
@@ -242,13 +242,18 @@ class NavDrawer {
     }
   }
 
-  _calcSpeed(time) {
-    if (time >= MAX_TIME) {
-      return MAX_SPEED
+  _calcSpeed(time, distance) {
+    const distanceRemain = this.elementSize - distance
+    if (~Math.sign(distanceRemain)) {
+      let newTime = distanceRemain * time / distance
+      if (newTime > MAX_SPEED) {
+        newTime = MAX_SPEED
+      } else if (newTime < MIN_SPEED) {
+        newTime = MIN_SPEED
+      }
+      return newTime
     }
-    const percent = 100
-    const percentage = time / MAX_TIME * percent
-    return percentage / percent * MAX_SPEED
+    return 0
   }
 
   _checkDirection() {
