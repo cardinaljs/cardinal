@@ -1,0 +1,42 @@
+:root {
+  font-size: 0.625rem;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Open-Sans', 'Roboto', Helvetica, Arial, sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Neue', 'Franklin Gothic Medium', 'Arial Narrow', Impact, Haettenschweiler;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.container .main {
+  padding: 0 1.5rem;
+}
+
+p {
+  color: #666666;
+  line-height: 2.3rem;
+  *padding: 1.5rem;
+}
+
+nav {
+  display: block;
+}
+
+.bare-btn {
+  background: transparent;
+  border: 0;
+}
+
+.pull-right {
+  position: relative;
+  right: -8rem;
+}
+
+.full-width {
+  width: 100%;
+}

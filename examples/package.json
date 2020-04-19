@@ -1,0 +1,19 @@
+{
+  "name": "cardinal-examples",
+  "version": "1.0.0",
+  "description": "Put cardinal.js into action",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cardinal",
+    "drawer",
+    "examples"
+  ],
+  "author": "Caleb Pitan",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "jam-icons": "^2.0.0"
+  }
+}

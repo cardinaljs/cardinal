@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+    <title>Cardinal Nav</title>
+
+    <link rel="stylesheet" href="../../compass/dist/compass.css" />
+    <link rel="stylesheet" href="cardinal-examples.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <nav class="navbar">
+        <ul class="nav-list">
+          <li>
+            <a href="#menu" class="menu-btn" data-controls="#menu" title="Menu">MENU</a>
+          </li>
+          <li>
+            <a href="#cardinal" id="menu-btn2">Cardinal</a>
+          </li>
+          <li>
+            <a href="#examples">Examples</a>
+          </li>
+        </ul>
+      </nav>
+      <nav class="main-menu left" id="menu" data-max-width="767">
+        <div class="header">
+          <!--Some background image and some text-->
+        </div>
+        <ul class="nav-list">
+          <li>
+            <a href="#item1">Item 1</a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="#item2">Item 2</a>
+          </li>
+          <li>
+            <a href="#item3">Item 3</a>
+          </li>
+          <li>
+            <a href="#item4">Item 4</a>
+          </li>
+        </ul>
+      </nav>
+
+      <nav class="main-menu right" id="menu2" data-max-width="767">
+        <div class="header">
+          <!--Some background image and some text-->
+        </div>
+        <ul class="nav-list">
+          <li>
+            <a href="#item1">Item 1</a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="#item2">Item 2</a>
+          </li>
+          <li>
+            <a href="#item3">Item 3</a>
+          </li>
+          <li>
+            <a href="#item4">Item 4</a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="main">
+        <p>
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Labore iusto consequuntur aliquam facere id? Dolor, nemo magni. Tempora eveniet aperiam dolores debitis pariatur fugiat atque similique libero unde quam? Illo?
+          Lorem ipsum dolor, sit amet consectetur adipisicing elit. Neque modi reiciendis libero aliquam, eligendi, corrupti quo pariatur explicabo odit perspiciatis aperiam magnam porro, ipsum dolore nemo natus. Temporibus, similique quo.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt saepe voluptates cumque autem quibusdam aspernatur assumenda. Modi dolores officia rem, ex dolore, in dolor possimus iusto atque obcaecati ut quos.
+          Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quisquam sapiente nemo numquam aspernatur ratione! Error, provident, est fugit hic perspiciatis, ipsa maxime veniam obcaecati voluptatem asperiores facilis non praesentium doloribus?
+        </p>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vel rem delectus labore dignissimos, excepturi fuga non blanditiis saepe aliquid, illum accusantium, aliquam error quibusdam! Impedit minus debitis facere sequi beatae.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Deserunt nam, quidem quae neque modi corporis dolores beatae placeat non dicta perferendis odit dolore eum consequatur fugiat et facere optio ducimus?
+        </p>
+      </div>
+    </div>
+    <!--script src="../dist/standalone/util.js"></script>
+    <script src="../dist/standalone/circularpath.js"></script>
+    <script src="../dist/standalone/drawer.js"></script>
+    <script src="../dist/standalone/nav.js"></script-->
+    <script src="../dist/cardinal.min.js"></script>
+
+    <script>
+      var nc = new Cardinal.Nav(".menu-btn");
+      var mountWorker = nc.setup({
+        direction: Cardinal.Drawer.LEFT,
+        useBackdrop: true,
+        dest: ".main-menu.left",
+        transition: 400
+      });
+      mountWorker.mount()
+        .then(function(StateEvent) {
+          StateEvent.on('show', function() {
+            console.log('shown')
+          })
+          StateEvent.on('hide', function() {
+            console.log('hidden')
+          })
+        })
+        .catch(function(err) {
+          console.log(err)
+        })
+      //mountWorker.unmount()
+
+      var nc = new Cardinal.Nav('#menu-btn2');
+      var mountWorker2 = nc.setup({
+        direction: Cardinal.Drawer.RIGHT,
+        useBackdrop: true,
+        dest: ".main-menu.right",
+        transition: 300
+      });
+      mountWorker2.mount()
+        .then(function(StateEvent) {
+          StateEvent.on('show', function() {
+            console.log('shown2')
+          })
+          StateEvent.on('hide', function() {
+            console.log('hidden2')
+          })
+        })
+        .catch(function(err) {
+          console.log(err)
+        })
+      //mountWorker2.unmount()
+      // mountWorker2.terminate(Nav.SERVICES.Hash | Nav.SERVICES.Drawer)
+
+      var cp = new Cardinal.CircularPath(25, 30, 45, 60, 90, 120, 150, 180, 360);
+      console.log(cp.paths)
+    </script>
+  </body>
+</html>
