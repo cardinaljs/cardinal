@@ -2,7 +2,7 @@
   * Cardinal v1.0.0
   * Repository: https://github.com/cardinaljs/cardinal
   * Copyright 2019 Caleb Pitan. All rights reserved.
-  * Build Date: 2019-08-12T00:27:29.657Z
+  * Build Date: 2019-08-17T23:09:34.883Z
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
@@ -14,10 +14,10 @@
   * limitations under the License.
   */
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = global || self, global.Cardinal = factory());
-}(this, function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (global = global || self, factory(global.Cardinal = {}));
+}(this, function (exports) { 'use strict';
 
   function _defineProperties(target, props) {
     for (var i = 0; i < props.length; i++) {
@@ -2915,8 +2915,8 @@
     _proto._drawerAPI = function _drawerAPI(options) {
       var _this = this;
 
-      var Drawer = options.CustomDrawer;
-      this.Drawer = Drawer && typeof Drawer === 'object' ? new Drawer(options, this.State) : new NavDrawer(options, this.State);
+      var CustomDrawer = options.CustomDrawer;
+      this.Drawer = CustomDrawer && typeof CustomDrawer === 'object' ? new CustomDrawer(options, this.State) : new NavDrawer(options, this.State);
       return {
         activate: function activate() {
           return _this.Drawer.activate();
@@ -3020,8 +3020,7 @@
   /*#__PURE__*/
   function () {
     function NavStateEvent($this, state) {
-      _defineProperty(this, "events", [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide]);
-
+      this.events = [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide];
       this.$this = $this;
       this._State = state;
     }
@@ -3401,7 +3400,7 @@
   var HIDDEN$2 = 'hidden';
   /**
    * This Service is pretty much similar to NavService
-   * @see ../nav/navservice.js
+   * @see {@link ../nav/navservice.js}
    * "Extend the NavService class"; you may think, but
    * things will get a lot messy.
    * Some little bit of copy-and-paste and tweaking was done.
@@ -3595,7 +3594,7 @@
     _proto.setup = function setup(options) {
       var navMountWorker = _NavCard.prototype.setup.call(this, options);
 
-      return new SheetMountWorker(navMountWorker.options);
+      return new SheetMountWorker(this, navMountWorker.options);
     }
     /**
      * @override
@@ -3653,7 +3652,8 @@
     _proto._drawerAPI = function _drawerAPI(options) {
       var _this2 = this;
 
-      this.Drawer = new SheetDrawer(options, this.State);
+      var CustomDrawer = options.CustomDrawer;
+      this.Drawer = CustomDrawer && typeof CustomDrawer === 'object' ? new CustomDrawer(options, this.State) : new SheetDrawer(options, this.State);
       return {
         activate: function activate() {
           return _this2.Drawer.activate();
@@ -3698,32 +3698,27 @@
 
   var SheetMountWorker =
   /*#__PURE__*/
-  function (_Sheet) {
-    _inheritsLoose(SheetMountWorker, _Sheet);
-
-    function SheetMountWorker(options) {
-      var _this4;
-
-      _this4 = _Sheet.call(this) || this;
-      _this4.options = options;
-      return _this4;
+  function () {
+    function SheetMountWorker(borrowedContext, options) {
+      this.$this = borrowedContext;
+      this.options = options;
     }
 
     var _proto2 = SheetMountWorker.prototype;
 
     _proto2.mount = function mount() {
-      var _this5 = this;
+      var _this4 = this;
 
-      var DEFAULT_ACTIVE = !this._defaultAPI(this.options.defaultOptions).activate();
-      var DRAWER_ACTIVE = !this._drawerAPI(this.options.drawerOptions).activate();
-      var HASH_ACTIVE = !this._hashAPI(this.options.hashOptions).activate();
+      var DEFAULT_ACTIVE = !this.$this._defaultAPI(this.options.defaultOptions).activate();
+      var DRAWER_ACTIVE = !this.$this._drawerAPI(this.options.drawerOptions).activate();
+      var HASH_ACTIVE = !this.$this._hashAPI(this.options.hashOptions).activate();
       return new Promise(function (resolve, reject) {
         if (!(DEFAULT_ACTIVE && DRAWER_ACTIVE && HASH_ACTIVE)) {
           reject(new Error('one or more services could not activate'));
           return;
         }
 
-        resolve(new SheetStateEvent(_this5.State));
+        resolve(new SheetStateEvent(_this4.$this, _this4.$this.State));
       });
     };
 
@@ -3738,25 +3733,31 @@
     };
 
     return SheetMountWorker;
-  }(Sheet);
+  }();
 
   var SheetStateEvent =
   /*#__PURE__*/
   function () {
-    function SheetStateEvent(state) {
-      _defineProperty(this, "events", [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide]);
-
+    function SheetStateEvent($this, state) {
+      this.events = [NAVSTATE_EVENTS.show, NAVSTATE_EVENTS.hide];
+      this.$this = $this;
       this._State = state;
     }
 
     var _proto3 = SheetStateEvent.prototype;
 
     _proto3.on = function on(event, handle) {
+      if (handle === void 0) {
+        handle = function handle() {
+          return false;
+        };
+      }
+
       if (!(this.events.indexOf(event) + 1)) {
         throw new Error("unknown event '" + event + "'");
       }
 
-      this._State["on" + event] = handle;
+      this._State["on" + event] = handle.bind(this.$this);
     };
 
     _proto3.off = function off(event) {
@@ -3788,15 +3789,14 @@
     resolveThreshold: resolveThreshold,
     css: css
   };
-  var index = {
-    CircularPath: CircularPath,
-    Drawer: Drawer,
-    Nav: NavCard,
-    Sheet: Sheet,
-    Util: Util
-  };
 
-  return index;
+  exports.CircularPath = CircularPath;
+  exports.Drawer = Drawer;
+  exports.Nav = NavCard;
+  exports.Sheet = Sheet;
+  exports.Util = Util;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
 //# sourceMappingURL=cardinal.js.map
